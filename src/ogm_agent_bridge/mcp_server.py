@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from typing import Any, Literal
 
 from mcp.server.fastmcp import FastMCP
@@ -39,16 +40,16 @@ def create_server(settings: Settings | None = None) -> FastMCP:
         try:
             async with OGMClient(resolved_settings) as client:
                 return await health(client)
-        except BridgeError as error:
-            return safe_error(error)
+        except Exception as error:
+            return _tool_error(error)
 
     @server.tool(description="List datasets visible in configured project.")
     async def ogm_list_datasets() -> dict[str, Any]:
         try:
             async with OGMClient(resolved_settings) as client:
                 return await list_datasets(client)
-        except BridgeError as error:
-            return safe_error(error)
+        except Exception as error:
+            return _tool_error(error)
 
     @server.tool(description="Run grounded OpenGraphMemory retrieval.")
     async def ogm_query(
@@ -82,8 +83,8 @@ def create_server(settings: Settings | None = None) -> FastMCP:
             )
             async with OGMClient(resolved_settings) as client:
                 return await run_query(client, arguments)
-        except BridgeError as error:
-            return safe_error(error)
+        except Exception as error:
+            return _tool_error(error)
 
     @server.tool(description="Search stored memory facts lexically.")
     async def ogm_search_memory(
@@ -107,8 +108,8 @@ def create_server(settings: Settings | None = None) -> FastMCP:
             )
             async with OGMClient(resolved_settings) as client:
                 return await run_memory_search(client, arguments)
-        except BridgeError as error:
-            return safe_error(error)
+        except Exception as error:
+            return _tool_error(error)
 
     @server.tool(
         description="Provision stable user and agent identities then create session."
@@ -147,8 +148,8 @@ def create_server(settings: Settings | None = None) -> FastMCP:
                     )
             finally:
                 state.close()
-        except BridgeError as error:
-            return safe_error(error)
+        except Exception as error:
+            return _tool_error(error)
 
     @server.tool(description="Store one message and one fact in mapped active session.")
     async def ogm_remember(
@@ -171,8 +172,8 @@ def create_server(settings: Settings | None = None) -> FastMCP:
                     )
             finally:
                 state.close()
-        except BridgeError as error:
-            return safe_error(error)
+        except Exception as error:
+            return _tool_error(error)
 
     @server.tool(description="Upload regular local file as multipart document.")
     async def ogm_upload_document(
@@ -193,8 +194,8 @@ def create_server(settings: Settings | None = None) -> FastMCP:
                     filename,
                     mime_type,
                 )
-        except BridgeError as error:
-            return safe_error(error)
+        except Exception as error:
+            return _tool_error(error)
 
     return server
 
@@ -202,6 +203,14 @@ def create_server(settings: Settings | None = None) -> FastMCP:
 def _defined(**values: Any) -> dict[str, Any]:
     """Drop unset optional MCP arguments before core payload validation."""
     return {name: value for name, value in values.items() if value is not None}
+
+
+def _tool_error(error: Exception) -> dict[str, Any]:
+    """Return public errors only; do not catch BaseException."""
+    if isinstance(error, BridgeError):
+        return safe_error(error)
+    print("ogm-agent-bridge: internal tool failure", file=sys.stderr)
+    return safe_error(BridgeError("Internal bridge error"))
 
 
 def main() -> None:
