@@ -31,3 +31,21 @@ def test_server_registers_health_tool() -> None:
     server = create_server(Settings("https://core.example.test", "key", "project"))
 
     assert "ogm_health" in server._tool_manager._tools
+
+
+@pytest.mark.asyncio
+async def test_server_exposes_explicit_read_tool_schemas() -> None:
+    server = create_server(Settings("https://core.example.test", "key", "project"))
+    tools = {tool.name: tool.inputSchema for tool in await server.list_tools()}
+
+    assert set(tools) == {
+        "ogm_health",
+        "ogm_list_datasets",
+        "ogm_query",
+        "ogm_search_memory",
+    }
+    assert "memory_session_id" in tools["ogm_query"]["properties"]
+    assert "graph_timeout_ms" in tools["ogm_query"]["properties"]
+    assert "session_id" in tools["ogm_search_memory"]["properties"]
+    assert "include_superseded" in tools["ogm_search_memory"]["properties"]
+    assert "options" not in tools["ogm_query"]["properties"]

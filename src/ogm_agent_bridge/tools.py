@@ -35,6 +35,9 @@ async def query(client: OGMClient, arguments: Mapping[str, Any]) -> dict[str, An
     _integer(arguments, payload, "graph_fanout", 1, 100)
     _integer(arguments, payload, "graph_timeout_ms", 1, 10_000)
     _choice(arguments, payload, "fusion", _FUSIONS)
+    _optional_string(arguments, payload, "memory_user_id")
+    _optional_string(arguments, payload, "memory_agent_id")
+    _optional_string(arguments, payload, "memory_session_id")
     _integer(arguments, payload, "memory_top_k", 0, 20)
     response = await client.request("POST", "/v1/query", json=payload)
     data = response.json()
@@ -55,6 +58,9 @@ async def search_memory(
     """Search memory facts with lexical-search warning."""
     require_read("memory:read")
     payload: dict[str, Any] = {"query": _string(arguments, "query", 1, 5_000)}
+    _optional_string(arguments, payload, "user_id")
+    _optional_string(arguments, payload, "agent_id")
+    _optional_string(arguments, payload, "session_id")
     _integer(arguments, payload, "limit", 1, 50)
     if "include_superseded" in arguments:
         value = arguments["include_superseded"]
@@ -101,6 +107,17 @@ def _integer(
     value = arguments[name]
     if type(value) is not int or not minimum <= value <= maximum:
         raise ValidationError(f"{name} must be an integer from {minimum} to {maximum}")
+    payload[name] = value
+
+
+def _optional_string(
+    arguments: Mapping[str, Any], payload: dict[str, Any], name: str
+) -> None:
+    if name not in arguments:
+        return
+    value = arguments[name]
+    if type(value) is not str or not value:
+        raise ValidationError(f"{name} must be a non-empty string")
     payload[name] = value
 
 
