@@ -39,7 +39,7 @@ async def query(client: OGMClient, arguments: Mapping[str, Any]) -> dict[str, An
     _optional_string(arguments, payload, "memory_agent_id")
     _optional_string(arguments, payload, "memory_session_id")
     _integer(arguments, payload, "memory_top_k", 0, 20)
-    response = await client.request("POST", "/v1/query", json=payload)
+    response = await client.request("POST", "/v1/query", json=payload, retry=False)
     data = response.json()
     provenance: dict[str, Any] = {
         "project_id": client.project_id,
