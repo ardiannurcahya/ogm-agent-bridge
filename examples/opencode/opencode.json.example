@@ -1,0 +1,23 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "ogm": {
+      "type": "local",
+      "command": [
+        "uv",
+        "run",
+        "--project",
+        "/absolute/path/ogm-agent-bridge",
+        "ogm-agent-bridge"
+      ],
+      "environment": {
+        "OGM_BASE_URL": "{env:OGM_BASE_URL}",
+        "OGM_API_KEY": "{env:OGM_API_KEY}",
+        "OGM_PROJECT_ID": "{env:OGM_PROJECT_ID}",
+        "OGM_STATE_DB": "{env:OGM_STATE_DB}",
+        "OGM_PERMISSION_PROFILE": "{env:OGM_PERMISSION_PROFILE}"
+      },
+      "enabled": true
+    }
+  }
+}
