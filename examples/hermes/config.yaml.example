@@ -1,0 +1,16 @@
+mcp_servers:
+  ogm:
+    command: "uv"
+    args:
+      - "run"
+      - "--project"
+      - "/absolute/path/ogm-agent-bridge"
+      - "ogm-agent-bridge"
+    env:
+      OGM_BASE_URL: "${OGM_BASE_URL}"
+      OGM_API_KEY: "${OGM_API_KEY}"
+      OGM_PROJECT_ID: "${OGM_PROJECT_ID}"
+      OGM_STATE_DB: "${OGM_STATE_DB}"
+      OGM_PERMISSION_PROFILE: "${OGM_PERMISSION_PROFILE}"
+    timeout: 120
+    connect_timeout: 60
