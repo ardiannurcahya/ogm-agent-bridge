@@ -38,7 +38,12 @@ Exit criteria:
 - Tests prove API key redaction and error mapping.
 - CI passes ruff, mypy, pytest.
 
-### B1 — MCP read tools
+### B1 — MCP read tools — complete
+
+Implemented: stdio MCP server; hardcoded read permissions; `ogm_health`,
+`ogm_list_datasets`, `ogm_query`, and `ogm_search_memory`; common success
+response envelope; safe structured tool errors; unit and mock-core contract
+tests. `ogm_search_memory` warns that core search is lexical.
 
 Deliverables:
 

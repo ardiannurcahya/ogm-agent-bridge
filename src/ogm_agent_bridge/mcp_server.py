@@ -11,8 +11,15 @@ from ogm_agent_bridge.config import Settings, load_settings
 from ogm_agent_bridge.errors import BridgeError
 from ogm_agent_bridge.permissions import require_read
 from ogm_agent_bridge.responses import envelope, safe_error
-from ogm_agent_bridge.tools import list_datasets
-from ogm_agent_bridge.tools import query as run_query
+from ogm_agent_bridge.tools import (
+    list_datasets,
+)
+from ogm_agent_bridge.tools import (
+    query as run_query,
+)
+from ogm_agent_bridge.tools import (
+    search_memory as run_memory_search,
+)
 
 
 async def health(client: OGMClient) -> dict[str, Any]:
@@ -49,6 +56,14 @@ def create_server(settings: Settings | None = None) -> FastMCP:
             arguments = {"dataset_id": dataset_id, "query": query, **options}
             async with OGMClient(resolved_settings) as client:
                 return await run_query(client, arguments)
+        except BridgeError as error:
+            return safe_error(error)
+
+    @server.tool(description="Search stored memory facts lexically.")
+    async def ogm_search_memory(query: str, **options: Any) -> dict[str, Any]:
+        try:
+            async with OGMClient(resolved_settings) as client:
+                return await run_memory_search(client, {"query": query, **options})
         except BridgeError as error:
             return safe_error(error)
 

@@ -12,6 +12,7 @@ from ogm_agent_bridge.responses import envelope
 
 _MODES = frozenset({"vector_only", "graph_only", "hybrid"})
 _FUSIONS = frozenset({"rrf", "weighted"})
+_SCOPES = frozenset({"user", "agent", "session"})
 
 
 async def list_datasets(client: OGMClient) -> dict[str, Any]:
@@ -46,6 +47,33 @@ async def query(client: OGMClient, arguments: Mapping[str, Any]) -> dict[str, An
         if isinstance(trace_id, str):
             provenance["trace_id"] = trace_id
     return envelope(data, provenance=provenance)
+
+
+async def search_memory(
+    client: OGMClient, arguments: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Search memory facts with lexical-search warning."""
+    require_read("memory:read")
+    payload: dict[str, Any] = {"query": _string(arguments, "query", 1, 5_000)}
+    _integer(arguments, payload, "limit", 1, 50)
+    if "include_superseded" in arguments:
+        value = arguments["include_superseded"]
+        if type(value) is not bool:
+            raise ValidationError("include_superseded must be a boolean")
+        payload["include_superseded"] = value
+    if "scopes" in arguments:
+        scopes = arguments["scopes"]
+        if not isinstance(scopes, list) or not all(
+            type(scope) is str and scope in _SCOPES for scope in scopes
+        ):
+            raise ValidationError("scopes must contain user, agent, or session")
+        payload["scopes"] = scopes
+    response = await client.request("POST", "/v1/memory/search", json=payload)
+    return envelope(
+        response.json(),
+        provenance={"project_id": client.project_id},
+        warnings=["Memory search is lexical, not semantic retrieval."],
+    )
 
 
 def _string(

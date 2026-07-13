@@ -8,8 +8,19 @@ harnesses through a single MCP server, with adapters for **Claude Code**,
 
 ## Status
 
-Early development. See [`docs/plan.md`](docs/plan.md) for the full roadmap and
-milestone breakdown.
+B1 read tools implemented: `ogm_health`, `ogm_list_datasets`, `ogm_query`, and
+`ogm_search_memory`. Write tools remain planned. See [`docs/plan.md`](docs/plan.md).
+
+## Development run
+
+```bash
+uv sync
+uv run ogm-agent-bridge
+```
+
+Server uses stdio. Keep stdout reserved for MCP protocol. Configure
+`OGM_BASE_URL`, `OGM_API_KEY`, and `OGM_PROJECT_ID`; `ogm_health` calls core
+`/health` without project headers.
 
 ## What it does
 
