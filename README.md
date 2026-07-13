@@ -11,10 +11,18 @@ Connect one OpenGraphMemory project to Claude Code, OpenCode, or Hermes.
 
 Keep agents away from direct database, vector-store, graph-store, and object-store access.
 
-```text
-Claude Code ─┐
-OpenCode ────┼─ MCP stdio ─ ogm-agent-bridge ─ OpenGraphMemory REST
-Hermes ──────┘
+```mermaid
+flowchart LR
+    CC[Claude Code]
+    OC[OpenCode]
+    HE[Hermes]
+    BR[ogm-agent-bridge]
+    API[OpenGraphMemory REST API]
+
+    CC -->|MCP stdio| BR
+    OC -->|MCP stdio| BR
+    HE -->|MCP stdio| BR
+    BR -->|Authenticated HTTP| API
 ```
 
 `ogm-agent-bridge` validates tool input, enforces local permissions, calls core REST APIs, and keeps required local session mappings in SQLite.
