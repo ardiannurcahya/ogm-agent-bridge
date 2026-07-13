@@ -21,6 +21,8 @@ class Settings:
     project_id: str
     timeout_seconds: float = 30.0
     max_retries: int = 2
+    state_db: Path = Path("~/.local/state/ogm-agent-bridge/state.db")
+    permission_profile: str = "personal-safe"
 
 
 def load_settings(
@@ -30,13 +32,23 @@ def load_settings(
     if environ is None:
         load_dotenv(dotenv_path=dotenv_path, override=False)
         environ = os.environ
-
     base_url = _required(environ, "OGM_BASE_URL").rstrip("/")
     api_key = _required(environ, "OGM_API_KEY")
     project_id = _required(environ, "OGM_PROJECT_ID")
-    timeout_seconds = _positive_float(environ, "OGM_TIMEOUT_SECONDS", 30.0)
-    max_retries = _nonnegative_int(environ, "OGM_MAX_RETRIES", 2)
-    return Settings(base_url, api_key, project_id, timeout_seconds, max_retries)
+    profile = environ.get("OGM_PERMISSION_PROFILE", "personal-safe")
+    if profile not in {"read-only", "personal-safe"}:
+        raise ConfigError("OGM_PERMISSION_PROFILE must be read-only or personal-safe")
+    return Settings(
+        base_url,
+        api_key,
+        project_id,
+        _positive_float(environ, "OGM_TIMEOUT_SECONDS", 30.0),
+        _nonnegative_int(environ, "OGM_MAX_RETRIES", 2),
+        Path(
+            environ.get("OGM_STATE_DB", "~/.local/state/ogm-agent-bridge/state.db")
+        ).expanduser(),
+        profile,
+    )
 
 
 def _required(environ: Mapping[str, str], name: str) -> str:
