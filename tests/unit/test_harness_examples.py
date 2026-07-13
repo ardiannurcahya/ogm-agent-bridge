@@ -106,12 +106,12 @@ def _simple_yaml(content: str) -> dict[str, Any]:
             continue
         key, value = text.split(":", 1)
         if not value.strip():
-            assert key in {"args", "env"}
+            assert key in {"args", "env", "tools"}
             section = key
             server[key] = [] if key == "args" else {}
             continue
-        if section == "env" and raw_line.startswith("      "):
-            server["env"][key] = _yaml_scalar(value.strip())
+        if section in {"env", "tools"} and raw_line.startswith("      "):
+            server[section][key] = _yaml_scalar(value.strip())
         else:
             section = None
             server[key] = _yaml_scalar(value.strip())

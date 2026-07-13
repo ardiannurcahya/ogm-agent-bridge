@@ -12,5 +12,10 @@ mcp_servers:
       OGM_PROJECT_ID: "${OGM_PROJECT_ID}"
       OGM_STATE_DB: "${OGM_STATE_DB}"
       OGM_PERMISSION_PROFILE: "${OGM_PERMISSION_PROFILE}"
+    enabled: true
     timeout: 120
     connect_timeout: 60
+    supports_parallel_tool_calls: false
+    tools:
+      resources: false
+      prompts: false
