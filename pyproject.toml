@@ -39,6 +39,7 @@ packages = ["src/ogm_agent_bridge"]
 
 [dependency-groups]
 dev = [
+  "hatchling==1.27.0",
   "mypy>=1.10,<2",
   "pytest>=8,<9",
   "pytest-asyncio>=0.23,<1",
