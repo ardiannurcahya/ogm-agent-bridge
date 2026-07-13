@@ -19,7 +19,7 @@ def settings() -> Settings:
 
 
 @pytest.mark.asyncio
-async def test_create_session_payload_reuse_and_no_write_retry(
+async def test_create_session_creates_switchable_sessions_and_reuses_identities(
     tmp_path: Path, settings: Settings
 ) -> None:
     calls: list[tuple[str, dict[str, object]]] = []
@@ -52,9 +52,12 @@ async def test_create_session_payload_reuse_and_no_write_retry(
         "agent_id": "id-2",
     }
     assert second["data"] == {
-        "session_id": first["data"]["session_id"],
-        "core_session_id": "id-3",
+        "session_id": second["data"]["session_id"],
+        "core_session_id": "id-4",
+        "user_id": "id-1",
+        "agent_id": "id-2",
     }
+    assert second["data"]["session_id"] != first["data"]["session_id"]
     assert calls == [
         (
             "/v1/memory/users",
@@ -63,6 +66,15 @@ async def test_create_session_payload_reuse_and_no_write_retry(
         (
             "/v1/memory/agents",
             {"name": "agent", "description": "Agent", "metadata": {"a": 2}},
+        ),
+        (
+            "/v1/memory/sessions",
+            {
+                "user_id": "id-1",
+                "agent_id": "id-2",
+                "title": "Title",
+                "metadata": {"s": 3},
+            },
         ),
         (
             "/v1/memory/sessions",
@@ -91,13 +103,6 @@ async def test_create_session_failure_marks_uncertain_and_never_retries(
 
     state = StateStore(tmp_path / "state.sqlite3", "project")
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
-        with pytest.raises(ValidationError, match="uncertain"):
-            await create_session(
-                OGMClient(settings, http_client),
-                state,
-                "personal-safe",
-                {"user_external_id": "u", "agent_name": "a"},
-            )
         with pytest.raises(ValidationError, match="uncertain"):
             await create_session(
                 OGMClient(settings, http_client),
@@ -168,17 +173,44 @@ def test_state_migration_permissions_restart_and_uncertain(tmp_path: Path) -> No
     assert os.stat(path).st_mode & 0o777 == 0o600
     assert state.db.execute("PRAGMA journal_mode").fetchone()[0] == "delete"
     state.begin_identity("users", "u")
-    state.begin_session("u", "a")
+    bridge_id = state.begin_session("u", "a")
     state.close()
     restarted = StateStore(path, "project")
     assert restarted.identity("users", "u") == (None, "uncertain")
-    session = restarted.session("u", "a")
-    assert session is not None
-    assert session[2] == "uncertain"
+    assert restarted.resolve_session(bridge_id) is None
     restarted.close()
     assert sqlite3.connect(path).execute(
         "SELECT version FROM schema_version"
-    ).fetchone() == (1,)
+    ).fetchone() == (2,)
+
+
+def test_v1_migration_retains_sessions_and_allows_duplicate_identity(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "state.sqlite3"
+    db = sqlite3.connect(path)
+    db.executescript("""
+    CREATE TABLE schema_version (version INTEGER NOT NULL);
+    INSERT INTO schema_version VALUES (1);
+    CREATE TABLE users (project_id TEXT NOT NULL, external_id TEXT NOT NULL, core_id TEXT, status TEXT NOT NULL CHECK(status IN ('provisioning','active','uncertain')), PRIMARY KEY(project_id, external_id));
+    CREATE TABLE agents (project_id TEXT NOT NULL, name TEXT NOT NULL, core_id TEXT, status TEXT NOT NULL CHECK(status IN ('provisioning','active','uncertain')), PRIMARY KEY(project_id, name));
+    CREATE TABLE sessions (project_id TEXT NOT NULL, bridge_id TEXT NOT NULL, user_external_id TEXT NOT NULL, agent_name TEXT NOT NULL, core_id TEXT, status TEXT NOT NULL CHECK(status IN ('provisioning','active','uncertain')), PRIMARY KEY(project_id, bridge_id), UNIQUE(project_id, user_external_id, agent_name));
+    INSERT INTO users VALUES ('project', 'user', 'core-user', 'active');
+    INSERT INTO agents VALUES ('project', 'agent', 'core-agent', 'active');
+    INSERT INTO sessions VALUES ('project', 'old', 'user', 'agent', 'core-old', 'active');
+    """)
+    db.close()
+
+    state = StateStore(path, "project")
+    new_bridge_id = state.begin_session("user", "agent")
+
+    assert new_bridge_id != "old"
+    assert state.resolve_session("old") == "core-old"
+    assert state.identity("users", "user") == ("core-user", "active")
+    assert state.identity("agents", "agent") == ("core-agent", "active")
+    assert state.db.execute("SELECT COUNT(*) FROM sessions").fetchone() == (2,)
+    assert state.db.execute("SELECT version FROM schema_version").fetchone() == (2,)
+    state.close()
 
 
 @pytest.mark.asyncio

@@ -32,12 +32,26 @@ class StateStore:
         )
         row = self.db.execute("SELECT version FROM schema_version").fetchone()
         if row is None:
-            self.db.execute("INSERT INTO schema_version VALUES (1)")
+            self.db.execute("INSERT INTO schema_version VALUES (2)")
             self.db.executescript("""
             CREATE TABLE users (project_id TEXT NOT NULL, external_id TEXT NOT NULL, core_id TEXT, status TEXT NOT NULL CHECK(status IN ('provisioning','active','uncertain')), PRIMARY KEY(project_id, external_id));
             CREATE TABLE agents (project_id TEXT NOT NULL, name TEXT NOT NULL, core_id TEXT, status TEXT NOT NULL CHECK(status IN ('provisioning','active','uncertain')), PRIMARY KEY(project_id, name));
-            CREATE TABLE sessions (project_id TEXT NOT NULL, bridge_id TEXT NOT NULL, user_external_id TEXT NOT NULL, agent_name TEXT NOT NULL, core_id TEXT, status TEXT NOT NULL CHECK(status IN ('provisioning','active','uncertain')), PRIMARY KEY(project_id, bridge_id), UNIQUE(project_id, user_external_id, agent_name));
+            CREATE TABLE sessions (project_id TEXT NOT NULL, bridge_id TEXT NOT NULL, user_external_id TEXT NOT NULL, agent_name TEXT NOT NULL, core_id TEXT, status TEXT NOT NULL CHECK(status IN ('provisioning','active','uncertain')), PRIMARY KEY(project_id, bridge_id));
             """)
+        elif row[0] == 1:
+            try:
+                self.db.executescript("""
+                BEGIN;
+                CREATE TABLE sessions_v2 (project_id TEXT NOT NULL, bridge_id TEXT NOT NULL, user_external_id TEXT NOT NULL, agent_name TEXT NOT NULL, core_id TEXT, status TEXT NOT NULL CHECK(status IN ('provisioning','active','uncertain')), PRIMARY KEY(project_id, bridge_id));
+                INSERT INTO sessions_v2(project_id, bridge_id, user_external_id, agent_name, core_id, status) SELECT project_id, bridge_id, user_external_id, agent_name, core_id, status FROM sessions;
+                DROP TABLE sessions;
+                ALTER TABLE sessions_v2 RENAME TO sessions;
+                UPDATE schema_version SET version=2;
+                COMMIT;
+                """)
+            except Exception:
+                self.db.rollback()
+                raise
         self.db.commit()
 
     def _recover_interrupted_writes(self) -> None:
@@ -82,19 +96,7 @@ class StateStore:
         )
         self.db.commit()
 
-    def session(self, user: str, agent: str) -> tuple[str, str | None, str] | None:
-        return cast(
-            tuple[str, str | None, str] | None,
-            self.db.execute(
-                "SELECT bridge_id, core_id, status FROM sessions WHERE project_id=? AND user_external_id=? AND agent_name=?",
-                (self.project_id, user, agent),
-            ).fetchone(),
-        )
-
     def begin_session(self, user: str, agent: str) -> str:
-        row = self.session(user, agent)
-        if row:
-            return row[0]
         bridge_id = str(uuid.uuid4())
         self.db.execute(
             "INSERT INTO sessions VALUES(?,?,?,?,?,?)",

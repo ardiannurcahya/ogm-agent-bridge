@@ -21,16 +21,6 @@ async def create_session(
     require_write(profile, "memory:write")
     user = _string(arguments, "user_external_id", 1, 255)
     agent = _string(arguments, "agent_name", 1, 255)
-    old = state.session(user, agent)
-    if old and old[2] == "active":
-        return envelope(
-            {"session_id": old[0], "core_session_id": old[1]},
-            provenance={"project_id": client.project_id, "session_id": old[0]},
-        )
-    if old and old[2] != "provisioning":
-        raise ValidationError(
-            "Session identity uncertain; inspect core before retrying"
-        )
     user_id = await _identity(
         client,
         state,
