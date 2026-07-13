@@ -8,8 +8,12 @@ harnesses through a single MCP server, with adapters for **Claude Code**,
 
 ## Status
 
-B2 implemented: read tools plus `ogm_create_session`, `ogm_remember`, and
-`ogm_upload_document`. SQLite durable state maps local session IDs to core IDs.
+B3 implemented: versioned Claude Code, OpenCode, and Hermes MCP examples plus
+setup, trust, verification, and troubleshooting docs. B2 read and write tools
+remain available; SQLite durable state maps local session IDs to core IDs.
+
+Harness setup: [Claude Code](docs/claude-code.md), [OpenCode](docs/opencode.md),
+and [Hermes](docs/hermes.md).
 
 ## Development run
 

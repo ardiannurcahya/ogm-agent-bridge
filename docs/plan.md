@@ -76,17 +76,21 @@ Exit criteria:
 
 ### B3 — Harness adapters
 
+Status: implemented.
+
 Deliverables:
 
-- Claude Code `.mcp.json` example.
-- OpenCode config example.
-- Hermes skill plus wrapper.
-- Install docs for each harness.
+- `examples/claude-code/.mcp.json.example` and `docs/claude-code.md`.
+- `examples/opencode/opencode.json.example` and `docs/opencode.md`.
+- `examples/hermes/config.yaml.example` and `docs/hermes.md`.
+- Harness examples use all bridge-required environment variables and no secrets.
+- Lightweight conformance test validates JSON examples, Hermes YAML shape, commands, env names, docs, and seven-tool expectation.
 
 Exit criteria:
 
-- Claude Code, OpenCode, Hermes each call `ogm_query` and `ogm_search_memory`.
+- Claude Code, OpenCode, Hermes each document calls to `ogm_query` and `ogm_search_memory`.
 - Examples use environment variables, never committed secrets.
+- Runtime harness verification requires user OGM credentials and remains local-only.
 
 ### B4 — Contract tests + conformance
 

@@ -56,7 +56,7 @@ hermes mcp test ogm
 hermes tools list
 ```
 
-Expected tool names after startup: `mcp_ogm_ogm_health`, `mcp_ogm_ogm_list_datasets`, `mcp_ogm_ogm_query`, `mcp_ogm_ogm_search_memory`, `mcp_ogm_ogm_create_session`, `mcp_ogm_ogm_remember`, `mcp_ogm_ogm_upload_document`. Ask Hermes to call `mcp_ogm_ogm_health`, then `mcp_ogm_ogm_query` or `mcp_ogm_ogm_search_memory`.
+Expected 7 tools after startup: `mcp_ogm_ogm_health`, `mcp_ogm_ogm_list_datasets`, `mcp_ogm_ogm_query`, `mcp_ogm_ogm_search_memory`, `mcp_ogm_ogm_create_session`, `mcp_ogm_ogm_remember`, `mcp_ogm_ogm_upload_document`. Ask Hermes to call `mcp_ogm_ogm_health`, then `mcp_ogm_ogm_query` or `mcp_ogm_ogm_search_memory`.
 
 ## Troubleshoot
 
