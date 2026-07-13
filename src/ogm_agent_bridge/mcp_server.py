@@ -193,6 +193,7 @@ def create_server(settings: Settings | None = None) -> FastMCP:
                     path,
                     filename,
                     mime_type,
+                    resolved_settings.upload_roots,
                 )
         except Exception as error:
             return _tool_error(error)

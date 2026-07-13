@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,6 +24,7 @@ class Settings:
     max_retries: int = 2
     state_db: Path = Path("~/.local/state/ogm-agent-bridge/state.db")
     permission_profile: str = "personal-safe"
+    upload_roots: tuple[Path, ...] = ()
 
 
 def load_settings(
@@ -35,6 +37,10 @@ def load_settings(
     base_url = _required(environ, "OGM_BASE_URL").rstrip("/")
     api_key = _required(environ, "OGM_API_KEY")
     project_id = _required(environ, "OGM_PROJECT_ID")
+    try:
+        uuid.UUID(project_id)
+    except ValueError as error:
+        raise ConfigError("OGM_PROJECT_ID must be a UUID") from error
     profile = environ.get("OGM_PERMISSION_PROFILE", "personal-safe")
     if profile not in {"read-only", "personal-safe"}:
         raise ConfigError("OGM_PERMISSION_PROFILE must be read-only or personal-safe")
@@ -48,6 +54,7 @@ def load_settings(
             environ.get("OGM_STATE_DB", "~/.local/state/ogm-agent-bridge/state.db")
         ).expanduser(),
         profile,
+        _upload_roots(environ),
     )
 
 
@@ -69,6 +76,14 @@ def _positive_float(environ: Mapping[str, str], name: str, default: float) -> fl
     if value <= 0:
         raise ConfigError(f"{name} must be positive")
     return value
+
+
+def _upload_roots(environ: Mapping[str, str]) -> tuple[Path, ...]:
+    raw = environ.get("OGM_UPLOAD_ROOTS")
+    roots = raw.split(os.pathsep) if raw else [os.getcwd()]
+    if not all(roots):
+        raise ConfigError("OGM_UPLOAD_ROOTS must not contain empty paths")
+    return tuple(Path(root).expanduser().resolve() for root in roots)
 
 
 def _nonnegative_int(environ: Mapping[str, str], name: str, default: int) -> int:

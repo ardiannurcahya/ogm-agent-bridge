@@ -3,12 +3,19 @@
 from __future__ import annotations
 
 import mimetypes
+import uuid
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, cast
 
 from ogm_agent_bridge.client import OGMClient
-from ogm_agent_bridge.errors import BridgeError, ValidationError
+from ogm_agent_bridge.errors import (
+    AmbiguousWriteError,
+    BridgeError,
+    TimeoutError,
+    TransportError,
+    ValidationError,
+)
 from ogm_agent_bridge.permissions import require_write
 from ogm_agent_bridge.responses import envelope
 from ogm_agent_bridge.state import StateStore
@@ -62,7 +69,16 @@ async def create_session(
         raise ValidationError(
             "Session creation uncertain; inspect core before retrying"
         ) from error
-    state.finish_session(bridge_id, core_id)
+    try:
+        state.finish_session(bridge_id, core_id)
+    except Exception as error:
+        try:
+            state.uncertain_session(bridge_id)
+        except Exception:
+            pass
+        raise BridgeError(
+            "Session state uncertain; inspect local state before retrying"
+        ) from error
     return envelope(
         {
             "session_id": bridge_id,
@@ -93,7 +109,16 @@ async def _identity(
         raise ValidationError(
             "Identity creation uncertain; inspect core before retrying"
         ) from error
-    state.finish_identity(kind, key, core_id)
+    try:
+        state.finish_identity(kind, key, core_id)
+    except Exception as error:
+        try:
+            state.uncertain_identity(kind, key)
+        except Exception:
+            pass
+        raise BridgeError(
+            "Identity state uncertain; inspect local state before retrying"
+        ) from error
     return core_id
 
 
@@ -111,9 +136,22 @@ async def remember(
         "messages": [_message(message)],
         "facts": [_fact(fact)],
     }
-    response = await client.request(
-        "POST", f"/v1/memory/sessions/{core_id}/messages", json=payload, retry=False
-    )
+    try:
+        response = await client.request(
+            "POST",
+            f"/v1/memory/sessions/{core_id}/messages",
+            json=payload,
+            retry=False,
+            ambiguous_write=True,
+        )
+    except (AmbiguousWriteError, TimeoutError, TransportError) as error:
+        try:
+            state.block_session_writes(bridge_id)
+        except Exception:
+            pass
+        raise BridgeError(
+            "Message write uncertain; session blocked pending repair"
+        ) from error
     return envelope(
         response.json(),
         provenance={"project_id": client.project_id, "session_id": bridge_id},
@@ -127,14 +165,20 @@ async def upload_document(
     path: str,
     filename: str | None,
     mime_type: str | None,
+    upload_roots: tuple[Path, ...] | None = None,
 ) -> dict[str, Any]:
     require_write(profile, "documents:write")
-    if not isinstance(dataset_id, str) or not dataset_id:
-        raise ValidationError("dataset_id must be a non-empty string")
+    if not isinstance(dataset_id, str):
+        raise ValidationError("dataset_id must be a UUID")
+    try:
+        uuid.UUID(dataset_id)
+    except ValueError as error:
+        raise ValidationError("dataset_id must be a UUID") from error
     if not isinstance(path, str) or not path:
         raise ValidationError("path must be a non-empty string")
-    source = Path(path).expanduser()
-    if not source.is_file():
+    source = Path(path).expanduser().resolve()
+    roots = upload_roots or (Path.cwd().resolve(),)
+    if not source.is_file() or not any(source.is_relative_to(root) for root in roots):
         raise ValidationError("path must name a regular file")
     if filename is not None and (not isinstance(filename, str) or not filename):
         raise ValidationError("filename must be a non-empty string")

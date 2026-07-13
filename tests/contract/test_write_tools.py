@@ -8,7 +8,7 @@ import pytest
 
 from ogm_agent_bridge.client import OGMClient
 from ogm_agent_bridge.config import Settings
-from ogm_agent_bridge.errors import PermissionError, UpstreamError, ValidationError
+from ogm_agent_bridge.errors import BridgeError, PermissionError, ValidationError
 from ogm_agent_bridge.state import StateStore
 from ogm_agent_bridge.write_tools import create_session, remember, upload_document
 
@@ -157,7 +157,7 @@ async def test_remember_exact_payload_no_retry_and_permissions(
         },
     }
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
-        with pytest.raises(UpstreamError):
+        with pytest.raises(BridgeError, match="session blocked"):
             await remember(
                 OGMClient(settings, http_client), state, "personal-safe", arguments
             )
@@ -181,7 +181,7 @@ def test_state_migration_permissions_restart_and_uncertain(tmp_path: Path) -> No
     restarted.close()
     assert sqlite3.connect(path).execute(
         "SELECT version FROM schema_version"
-    ).fetchone() == (2,)
+    ).fetchone() == (3,)
 
 
 def test_v1_migration_retains_sessions_and_allows_duplicate_identity(
@@ -209,7 +209,7 @@ def test_v1_migration_retains_sessions_and_allows_duplicate_identity(
     assert state.identity("users", "user") == ("core-user", "active")
     assert state.identity("agents", "agent") == ("core-agent", "active")
     assert state.db.execute("SELECT COUNT(*) FROM sessions").fetchone() == (2,)
-    assert state.db.execute("SELECT version FROM schema_version").fetchone() == (2,)
+    assert state.db.execute("SELECT version FROM schema_version").fetchone() == (3,)
     state.close()
 
 
@@ -230,17 +230,28 @@ async def test_upload_regular_file_validation_and_multipart(
         result = await upload_document(
             OGMClient(settings, http_client),
             "personal-safe",
-            "dataset",
+            "00000000-0000-0000-0000-000000000002",
             str(source),
             "named.txt",
             "text/plain",
+            (tmp_path.resolve(),),
         )
     assert result["data"] == {"id": "doc"}
     with pytest.raises(ValidationError):
         await upload_document(
-            OGMClient(settings), "personal-safe", "dataset", str(tmp_path), None, None
+            OGMClient(settings),
+            "personal-safe",
+            "00000000-0000-0000-0000-000000000002",
+            str(tmp_path),
+            None,
+            None,
         )
     with pytest.raises(PermissionError):
         await upload_document(
-            OGMClient(settings), "read-only", "dataset", str(source), None, None
+            OGMClient(settings),
+            "read-only",
+            "00000000-0000-0000-0000-000000000002",
+            str(source),
+            None,
+            None,
         )

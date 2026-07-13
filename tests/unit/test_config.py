@@ -10,7 +10,7 @@ def env() -> dict[str, str]:
     return {
         "OGM_BASE_URL": "https://api.example.test/",
         "OGM_API_KEY": "secret",
-        "OGM_PROJECT_ID": "project-1",
+        "OGM_PROJECT_ID": "00000000-0000-0000-0000-000000000001",
     }
 
 
@@ -28,10 +28,13 @@ def test_loads_dotenv_file(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> N
     monkeypatch.delenv("OGM_PROJECT_ID", raising=False)
     dotenv = tmp_path / ".env"
     dotenv.write_text(
-        "OGM_BASE_URL=https://core.test\nOGM_API_KEY=k\nOGM_PROJECT_ID=p\n"
+        "OGM_BASE_URL=https://core.test\nOGM_API_KEY=k\nOGM_PROJECT_ID=00000000-0000-0000-0000-000000000001\n"
     )
 
-    assert load_settings(dotenv_path=dotenv).project_id == "p"
+    assert (
+        load_settings(dotenv_path=dotenv).project_id
+        == "00000000-0000-0000-0000-000000000001"
+    )
 
 
 def test_rejects_missing_required_value(env: dict[str, str]) -> None:
