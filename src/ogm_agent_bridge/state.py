@@ -19,7 +19,9 @@ class StateStore:
         self.db = sqlite3.connect(path)
         os.chmod(path, 0o600)
         self.db.execute("PRAGMA foreign_keys = ON")
+        self.db.execute("PRAGMA journal_mode = DELETE")
         self._migrate()
+        self._recover_interrupted_writes()
 
     def close(self) -> None:
         self.db.close()
@@ -36,6 +38,14 @@ class StateStore:
             CREATE TABLE agents (project_id TEXT NOT NULL, name TEXT NOT NULL, core_id TEXT, status TEXT NOT NULL CHECK(status IN ('provisioning','active','uncertain')), PRIMARY KEY(project_id, name));
             CREATE TABLE sessions (project_id TEXT NOT NULL, bridge_id TEXT NOT NULL, user_external_id TEXT NOT NULL, agent_name TEXT NOT NULL, core_id TEXT, status TEXT NOT NULL CHECK(status IN ('provisioning','active','uncertain')), PRIMARY KEY(project_id, bridge_id), UNIQUE(project_id, user_external_id, agent_name));
             """)
+        self.db.commit()
+
+    def _recover_interrupted_writes(self) -> None:
+        """Never repeat write with unknown outcome after process restart."""
+        for table in ("users", "agents", "sessions"):
+            self.db.execute(
+                f"UPDATE {table} SET status='uncertain' WHERE status='provisioning'"
+            )
         self.db.commit()
 
     def identity(self, kind: str, key: str) -> tuple[str | None, str] | None:
