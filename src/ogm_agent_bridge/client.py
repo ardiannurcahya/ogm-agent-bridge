@@ -21,8 +21,7 @@ class OGMClient:
     ) -> None:
         self._settings = settings
         self._client = client or httpx.AsyncClient(
-            base_url=settings.base_url,
-            timeout=httpx.Timeout(settings.timeout_seconds),
+            base_url=settings.base_url, timeout=httpx.Timeout(settings.timeout_seconds)
         )
         self._owns_client = client is None
 
@@ -38,7 +37,6 @@ class OGMClient:
 
     @property
     def project_id(self) -> str:
-        """Configured project scope."""
         return self._settings.project_id
 
     async def request(
@@ -47,9 +45,12 @@ class OGMClient:
         path: str,
         *,
         json: Mapping[str, Any] | None = None,
+        data: Mapping[str, Any] | None = None,
+        files: Any = None,
         authenticated: bool = True,
+        retry: bool = True,
     ) -> httpx.Response:
-        """Send core request; retry transient failures only."""
+        """Send core request; callers disable retry for non-idempotent writes."""
         headers = (
             {
                 "X-API-Key": self._settings.api_key,
@@ -58,27 +59,26 @@ class OGMClient:
             if authenticated
             else {}
         )
-        for attempt in range(self._settings.max_retries + 1):
+        retries = self._settings.max_retries if retry else 0
+        for attempt in range(retries + 1):
             try:
                 response = await self._client.request(
                     method,
                     httpx.URL(self._settings.base_url).join(path),
                     headers=headers,
                     json=json,
+                    data=data,
+                    files=files,
                 )
             except httpx.TimeoutException as error:
-                if attempt == self._settings.max_retries:
+                if attempt == retries:
                     raise TimeoutError("Core API request timed out") from error
                 continue
             except httpx.RequestError as error:
-                if attempt == self._settings.max_retries:
+                if attempt == retries:
                     raise TransportError("Core API transport failed") from error
                 continue
-
-            if (
-                response.status_code in _RETRYABLE_STATUS_CODES
-                and attempt < self._settings.max_retries
-            ):
+            if response.status_code in _RETRYABLE_STATUS_CODES and attempt < retries:
                 await response.aclose()
                 continue
             if response.is_error:
@@ -93,6 +93,4 @@ def _message(response: httpx.Response) -> str:
     except ValueError:
         return "Core API request failed"
     detail = body.get("detail") if isinstance(body, dict) else None
-    if isinstance(detail, str):
-        return detail
-    return "Core API request failed"
+    return detail if isinstance(detail, str) else "Core API request failed"
