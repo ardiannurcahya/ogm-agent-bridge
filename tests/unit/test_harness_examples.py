@@ -61,15 +61,19 @@ def test_opencode_example_is_valid_and_complete() -> None:
 
 
 def test_hermes_example_declares_explicit_bridge_environment() -> None:
-    content = _text("examples/hermes/config.yaml.example")
+    example = _simple_yaml(_text("examples/hermes/config.yaml.example"))
+    server = example["mcp_servers"]["ogm"]
 
-    assert "mcp_servers:\n  ogm:" in content
-    assert 'command: "uv"' in content
-    assert '- "/absolute/path/ogm-agent-bridge"' in content
-    for name in REQUIRED_ENV:
-        assert f'{name}: "${{{name}}}"' in content
-    assert "timeout: 120" in content
-    assert "connect_timeout: 60" in content
+    assert server["command"] == "uv"
+    assert server["args"] == [
+        "run",
+        "--project",
+        "/absolute/path/ogm-agent-bridge",
+        "ogm-agent-bridge",
+    ]
+    assert server["env"] == {name: f"${{{name}}}" for name in REQUIRED_ENV}
+    assert server["timeout"] == 120
+    assert server["connect_timeout"] == 60
 
 
 def test_harness_docs_state_tool_expectation_and_safe_setup() -> None:
@@ -85,6 +89,38 @@ def test_harness_docs_state_tool_expectation_and_safe_setup() -> None:
 
 def _json_example(path: str) -> dict[str, Any]:
     return json.loads(_text(path))
+
+
+def _simple_yaml(content: str) -> dict[str, Any]:
+    """Parse required small YAML mapping/list subset without PyYAML."""
+    result: dict[str, Any] = {"mcp_servers": {"ogm": {}}}
+    server = result["mcp_servers"]["ogm"]
+    section: str | None = None
+    for raw_line in content.splitlines():
+        text = raw_line.strip()
+        if not text or text.startswith("#") or text in {"mcp_servers:", "ogm:"}:
+            continue
+        if text.startswith("- "):
+            assert section == "args"
+            server["args"].append(_yaml_scalar(text[2:]))
+            continue
+        key, value = text.split(":", 1)
+        if not value.strip():
+            assert key in {"args", "env"}
+            section = key
+            server[key] = [] if key == "args" else {}
+            continue
+        if section == "env" and raw_line.startswith("      "):
+            server["env"][key] = _yaml_scalar(value.strip())
+        else:
+            section = None
+            server[key] = _yaml_scalar(value.strip())
+    return result
+
+
+def _yaml_scalar(value: str) -> str | int:
+    value = value.strip('"')
+    return int(value) if value.isdigit() else value
 
 
 def _text(path: str) -> str:
