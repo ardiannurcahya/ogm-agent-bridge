@@ -8,8 +8,8 @@ harnesses through a single MCP server, with adapters for **Claude Code**,
 
 ## Status
 
-B1 read tools implemented: `ogm_health`, `ogm_list_datasets`, `ogm_query`, and
-`ogm_search_memory`. Write tools remain planned. See [`docs/plan.md`](docs/plan.md).
+B2 implemented: read tools plus `ogm_create_session`, `ogm_remember`, and
+`ogm_upload_document`. SQLite durable state maps local session IDs to core IDs.
 
 ## Development run
 
@@ -58,10 +58,20 @@ cp .env.example .env
 OGM_BASE_URL=http://localhost:8000
 OGM_API_KEY=<project-api-key>
 OGM_PROJECT_ID=<project-uuid>
+OGM_STATE_DB=~/.local/state/ogm-agent-bridge/state.db
+OGM_PERMISSION_PROFILE=personal-safe
 ```
 
 One bridge instance maps to one OpenGraphMemory project (the API auth model is
-per-project).
+per-project). State database gets mode `0600`. `read-only` denies B2 writes;
+`personal-safe` allows them. Agent name is identity key: keep it stable.
+
+## Recovery limitation
+
+Normal restart reuses active SQLite mappings. Core has no public identity/session
+lookup. Lost state, timeout, or transport failure during provisioning becomes
+`uncertain`; bridge fails closed and never blindly retries POST. Inspect core
+before manual recovery.
 
 ## License
 

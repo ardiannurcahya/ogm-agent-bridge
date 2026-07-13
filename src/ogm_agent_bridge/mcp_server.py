@@ -110,6 +110,90 @@ def create_server(settings: Settings | None = None) -> FastMCP:
         except BridgeError as error:
             return safe_error(error)
 
+    @server.tool(
+        description="Provision stable user and agent identities then create session."
+    )
+    async def ogm_create_session(
+        user_external_id: str, agent_name: str, title: str | None = None
+    ) -> dict[str, Any]:
+        try:
+            from ogm_agent_bridge.state import StateStore
+            from ogm_agent_bridge.write_tools import create_session
+
+            state = StateStore(resolved_settings.state_db, resolved_settings.project_id)
+            try:
+                async with OGMClient(resolved_settings) as client:
+                    return await create_session(
+                        client,
+                        state,
+                        resolved_settings.permission_profile,
+                        _defined(
+                            user_external_id=user_external_id,
+                            agent_name=agent_name,
+                            title=title,
+                        ),
+                    )
+            finally:
+                state.close()
+        except BridgeError as error:
+            return safe_error(error)
+
+    @server.tool(description="Store one message and one fact in mapped active session.")
+    async def ogm_remember(
+        session_id: str,
+        content: str,
+        subject: str,
+        predicate: str,
+        value: str,
+        role: Literal["system", "user", "assistant", "tool"] = "user",
+    ) -> dict[str, Any]:
+        try:
+            from ogm_agent_bridge.state import StateStore
+            from ogm_agent_bridge.write_tools import remember
+
+            state = StateStore(resolved_settings.state_db, resolved_settings.project_id)
+            try:
+                async with OGMClient(resolved_settings) as client:
+                    return await remember(
+                        client,
+                        state,
+                        resolved_settings.permission_profile,
+                        {
+                            "session_id": session_id,
+                            "content": content,
+                            "subject": subject,
+                            "predicate": predicate,
+                            "value": value,
+                            "role": role,
+                        },
+                    )
+            finally:
+                state.close()
+        except BridgeError as error:
+            return safe_error(error)
+
+    @server.tool(description="Upload regular local file as multipart document.")
+    async def ogm_upload_document(
+        dataset_id: str,
+        path: str,
+        filename: str | None = None,
+        mime_type: str | None = None,
+    ) -> dict[str, Any]:
+        try:
+            from ogm_agent_bridge.write_tools import upload_document
+
+            async with OGMClient(resolved_settings) as client:
+                return await upload_document(
+                    client,
+                    resolved_settings.permission_profile,
+                    dataset_id,
+                    path,
+                    filename,
+                    mime_type,
+                )
+        except BridgeError as error:
+            return safe_error(error)
+
     return server
 
 

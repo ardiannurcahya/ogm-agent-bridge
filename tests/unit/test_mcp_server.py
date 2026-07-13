@@ -43,6 +43,9 @@ async def test_server_exposes_explicit_read_tool_schemas() -> None:
         "ogm_list_datasets",
         "ogm_query",
         "ogm_search_memory",
+        "ogm_create_session",
+        "ogm_remember",
+        "ogm_upload_document",
     }
     assert "memory_session_id" in tools["ogm_query"]["properties"]
     assert "graph_timeout_ms" in tools["ogm_query"]["properties"]
