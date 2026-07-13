@@ -92,7 +92,12 @@ Exit criteria:
 - Examples use environment variables, never committed secrets.
 - Runtime harness verification requires user OGM credentials and remains local-only.
 
-### B4 — Contract tests + conformance
+### B4 — Contract tests + conformance — complete
+
+Implemented: broad mock-core conformance tests, response-close/error/retry checks,
+deep query preservation, scope/default checks, project partition coverage, upload
+root and symlink restrictions, seven MCP schemas, safe unexpected errors, and an
+optional isolated real-core smoke test. See [conformance](conformance.md).
 
 Deliverables:
 

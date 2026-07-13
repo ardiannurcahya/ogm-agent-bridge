@@ -8,9 +8,10 @@ harnesses through a single MCP server, with adapters for **Claude Code**,
 
 ## Status
 
-B3 implemented: versioned Claude Code, OpenCode, and Hermes MCP examples plus
-setup, trust, verification, and troubleshooting docs. B2 read and write tools
-remain available; SQLite durable state maps local session IDs to core IDs.
+B4 complete: mock-core conformance coverage, optional isolated real-core smoke,
+and hardening for ambiguous writes, UUIDs, upload roots, and state finalization.
+B3 adapters and B2 read/write tools remain available; SQLite maps local session
+IDs to core IDs. See [conformance](docs/conformance.md).
 
 Harness setup: [Claude Code](docs/claude-code.md), [OpenCode](docs/opencode.md),
 and [Hermes](docs/hermes.md).
