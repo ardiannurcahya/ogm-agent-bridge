@@ -1,8 +1,12 @@
 # Release
 
-Release workflow runs only for pushed `v*` tags. It builds once, checks artifacts,
-creates SHA-256 checksums, uploads one artifact set, creates GitHub Release, and
-can publish same files to PyPI. Branch pushes never publish.
+Release workflow runs only for pushed `v*` tags. It runs format, lint, mypy, and
+pytest serially before build. It builds once, checks artifacts, creates SHA-256
+checksums, and uploads one artifact set. Branch pushes never publish.
+
+When `PUBLISH_PYPI` is unset or not `true`, workflow creates GitHub Release. When
+enabled, PyPI receives built artifact first; GitHub Release runs only after PyPI
+publish succeeds. Failed PyPI publish leaves no GitHub Release.
 
 ## One-time PyPI Trusted Publisher setup
 

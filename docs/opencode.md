@@ -6,9 +6,9 @@
 2. Clone bridge and install locked dependencies:
 
    ```bash
-   git clone <bridge-repository-url> /absolute/path/ogm-agent-bridge
-   cd /absolute/path/ogm-agent-bridge
-   uv sync
+   git clone https://github.com/ardiannurcahya/ogm-agent-bridge.git "$HOME/src/ogm-agent-bridge"
+   cd "$HOME/src/ogm-agent-bridge"
+   uv sync --locked
    ```
 
 3. Export bridge variables before starting OpenCode:

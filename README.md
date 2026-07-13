@@ -15,8 +15,9 @@ Bridge calls core REST only. No direct database, vector, graph, or object-store 
 Source install is current reliable setup. Package version is `0.1.0`, but no `v0.1.0` tag or PyPI publication exists yet.
 
 ```bash
-cd /root/ogm-agent-bridge
-uv sync --dev --locked
+git clone https://github.com/ardiannurcahya/ogm-agent-bridge.git "$HOME/src/ogm-agent-bridge"
+cd "$HOME/src/ogm-agent-bridge"
+uv sync --locked
 cp .env.example .env
 # Edit .env. Set OGM_API_KEY and OGM_PROJECT_ID.
 uv run ogm-agent-bridge

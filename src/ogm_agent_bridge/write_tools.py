@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import mimetypes
+import os
+import stat
 import uuid
 from collections.abc import Mapping
 from pathlib import Path
@@ -93,12 +95,13 @@ async def create_session(
 async def _identity(
     client: OGMClient, state: StateStore, kind: str, key: str, payload: dict[str, Any]
 ) -> str:
-    old = state.identity(kind, key)
-    if old and old[1] == "active" and old[0]:
-        return old[0]
-    if old and old[1] != "provisioning":
+    core_id, status = state.begin_identity(kind, key)
+    if status == "active" and core_id:
+        return core_id
+    if status == "provisioning":
+        raise ValidationError("Identity creation in progress; retry after repair")
+    if status != "claimed":
         raise ValidationError("Identity uncertain; inspect core before retrying")
-    state.begin_identity(kind, key)
     try:
         response = await client.request(
             "POST", f"/v1/memory/{kind}", json=payload, retry=False
@@ -178,7 +181,7 @@ async def upload_document(
         raise ValidationError("path must be a non-empty string")
     source = Path(path).expanduser().resolve()
     roots = upload_roots or (Path.cwd().resolve(),)
-    if not source.is_file() or not any(source.is_relative_to(root) for root in roots):
+    if not any(source.is_relative_to(root) for root in roots):
         raise ValidationError("path must name a regular file")
     if filename is not None and (not isinstance(filename, str) or not filename):
         raise ValidationError("filename must be a non-empty string")
@@ -186,7 +189,19 @@ async def upload_document(
         raise ValidationError("mime_type must be a non-empty string")
     name = filename or source.name
     mime = mime_type or mimetypes.guess_type(name)[0] or "application/octet-stream"
-    with source.open("rb") as file:
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        fd = os.open(source, flags)
+    except OSError as error:
+        raise ValidationError("path must name a regular file") from error
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            raise ValidationError("path must name a regular file")
+        file = os.fdopen(fd, "rb")
+    except Exception:
+        os.close(fd)
+        raise
+    with file:
         response = await client.request(
             "POST",
             f"/v1/datasets/{dataset_id}/documents",

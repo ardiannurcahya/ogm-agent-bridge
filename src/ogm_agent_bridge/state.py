@@ -77,13 +77,27 @@ class StateStore:
             ).fetchone(),
         )
 
-    def begin_identity(self, kind: str, key: str) -> None:
+    def begin_identity(self, kind: str, key: str) -> tuple[str | None, str]:
+        """Atomically claim missing identity, or return existing state."""
         column = "external_id" if kind == "users" else "name"
-        self.db.execute(
-            f"INSERT OR IGNORE INTO {kind}(project_id,{column},status) VALUES(?,?, 'provisioning')",
-            (self.project_id, key),
-        )
-        self.db.commit()
+        try:
+            self.db.execute("BEGIN IMMEDIATE")
+            result = self.db.execute(
+                f"INSERT OR IGNORE INTO {kind}(project_id,{column},status) VALUES(?,?, 'provisioning')",
+                (self.project_id, key),
+            )
+            if result.rowcount == 1:
+                self.db.commit()
+                return None, "claimed"
+            row = self.db.execute(
+                f"SELECT core_id, status FROM {kind} WHERE project_id=? AND {column}=?",
+                (self.project_id, key),
+            ).fetchone()
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
+        return cast(tuple[str | None, str], row)
 
     def finish_identity(self, kind: str, key: str, core_id: str) -> None:
         column = "external_id" if kind == "users" else "name"

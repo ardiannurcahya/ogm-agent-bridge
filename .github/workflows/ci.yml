@@ -5,32 +5,47 @@ on:
   pull_request:
 
 jobs:
-  check:
+  test:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
-    env:
-      PYTHONUNBUFFERED: "1"
-      PYTEST_ADDOPTS: "-q"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      # v4.1.7
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      # v5.0.4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: astral-sh/setup-uv@v5
+      # v5.0.0
+      - uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081
         with:
           enable-cache: true
+      - run: uv sync --dev --locked
+      - run: uv run pytest -q
+
+  package:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      # v4.1.7
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      # v5.0.4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.13"
+      # v5.0.0
+      - uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081
       - run: uv sync --dev --locked
       - run: uv run ruff format --check .
       - run: uv run ruff check .
       - run: uv run mypy src
-      - run: uv run pytest -q
       - run: uv build
-      - run: uvx twine check dist/*
+      - run: uvx twine==6.1.0 check dist/*
       - name: Smoke installed wheel
         run: |
-          uv venv /tmp/ogm-wheel-venv --python "${{ matrix.python-version }}"
+          version="$(python -c "from pathlib import Path; import tomllib; print(tomllib.loads(Path('pyproject.toml').read_text())['project']['version'])")"
+          uv venv /tmp/ogm-wheel-venv --python 3.13
           uv pip install --python /tmp/ogm-wheel-venv/bin/python dist/*.whl
-          test "$(/tmp/ogm-wheel-venv/bin/ogm-agent-bridge --version)" = "0.1.0"
+          test "$(/tmp/ogm-wheel-venv/bin/ogm-agent-bridge --version)" = "$version"

@@ -8,9 +8,11 @@ Stop harness/bridge first. SQLite backup must capture consistent database. Use S
 
 ```bash
 umask 077
-mkdir -p ~/.local/state/ogm-agent-bridge/backups
-sqlite3 ~/.local/state/ogm-agent-bridge/state.db ".backup '~/.local/state/ogm-agent-bridge/backups/state-$(date +%F).db'"
-chmod 600 ~/.local/state/ogm-agent-bridge/backups/state-*.db
+STATE_DB="${OGM_STATE_DB:-$HOME/.local/state/ogm-agent-bridge/state.db}"
+BACKUP_DIR="$HOME/.local/state/ogm-agent-bridge/backups"
+mkdir -p "$BACKUP_DIR"
+sqlite3 "$STATE_DB" ".backup '$BACKUP_DIR/state-$(date +%F).db'"
+chmod 600 "$BACKUP_DIR"/state-*.db
 ```
 
 Keep backup outside upload roots. Encrypt before off-host storage. Test restore on copy, never production state.

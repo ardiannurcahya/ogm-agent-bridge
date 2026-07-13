@@ -1,11 +1,15 @@
+import asyncio
+import concurrent.futures
 import json
 import os
 import sqlite3
+import threading
 from pathlib import Path
 
 import httpx
 import pytest
 
+from ogm_agent_bridge import write_tools
 from ogm_agent_bridge.client import OGMClient
 from ogm_agent_bridge.config import Settings
 from ogm_agent_bridge.errors import BridgeError, PermissionError, ValidationError
@@ -213,6 +217,58 @@ def test_v1_migration_retains_sessions_and_allows_duplicate_identity(
     state.close()
 
 
+def test_identity_claim_is_atomic_across_connections(tmp_path: Path) -> None:
+    path = tmp_path / "state.sqlite3"
+    StateStore(path, "project").close()
+    ready = threading.Barrier(2)
+
+    def claim() -> tuple[str | None, str]:
+        state = StateStore(path, "project")
+        ready.wait()
+        result = state.begin_identity("users", "user")
+        state.close()
+        return result
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(lambda _: claim(), range(2)))
+    assert sorted(results, key=lambda result: result[1]) == [
+        (None, "claimed"),
+        (None, "provisioning"),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_concurrent_session_creation_posts_each_identity_once(
+    tmp_path: Path, settings: Settings
+) -> None:
+    calls: list[str] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request.url.path)
+        await asyncio.sleep(0.01)
+        return httpx.Response(201, json={"id": request.url.path.rsplit("/", 1)[-1]})
+
+    arguments = {"user_external_id": "user", "agent_name": "agent"}
+    first = StateStore(tmp_path / "state.sqlite3", "project")
+    second = StateStore(tmp_path / "state.sqlite3", "project")
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        results = await asyncio.gather(
+            create_session(
+                OGMClient(settings, http_client), first, "personal-safe", arguments
+            ),
+            create_session(
+                OGMClient(settings, http_client), second, "personal-safe", arguments
+            ),
+            return_exceptions=True,
+        )
+    first.close()
+    second.close()
+
+    assert calls.count("/v1/memory/users") == 1
+    assert calls.count("/v1/memory/agents") == 1
+    assert sum(isinstance(result, ValidationError) for result in results) == 1
+
+
 @pytest.mark.asyncio
 async def test_upload_regular_file_validation_and_multipart(
     tmp_path: Path, settings: Settings
@@ -254,4 +310,32 @@ async def test_upload_regular_file_validation_and_multipart(
             str(source),
             None,
             None,
+        )
+
+
+@pytest.mark.asyncio
+async def test_upload_rejects_symlink_swapped_after_containment(
+    tmp_path: Path, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = tmp_path / "document.txt"
+    source.write_text("safe")
+    secret = tmp_path / "secret.txt"
+    secret.write_text("secret")
+    original_open = os.open
+
+    def swap_then_open(path: os.PathLike[str], flags: int, *args: int) -> int:
+        source.unlink()
+        source.symlink_to(secret)
+        return original_open(path, flags, *args)
+
+    monkeypatch.setattr(write_tools.os, "open", swap_then_open)
+    with pytest.raises(ValidationError, match="regular file"):
+        await upload_document(
+            OGMClient(settings),
+            "personal-safe",
+            "00000000-0000-0000-0000-000000000002",
+            str(source),
+            None,
+            None,
+            (tmp_path.resolve(),),
         )
