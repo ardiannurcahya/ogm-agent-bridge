@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable, Mapping
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -11,31 +10,8 @@ from ogm_agent_bridge.client import OGMClient
 from ogm_agent_bridge.config import Settings, load_settings
 from ogm_agent_bridge.errors import BridgeError
 from ogm_agent_bridge.permissions import require_read
-
-ToolHandler = Callable[[], Awaitable[dict[str, Any]]]
-
-
-def envelope(
-    data: Any,
-    *,
-    provenance: Mapping[str, Any] | None = None,
-    warnings: list[str] | None = None,
-) -> dict[str, Any]:
-    """Build common successful tool response."""
-    return {
-        "ok": True,
-        "data": data,
-        "provenance": dict(provenance or {}),
-        "warnings": warnings or [],
-    }
-
-
-def safe_error(error: BridgeError) -> dict[str, Any]:
-    """Build safe structured tool error."""
-    return {
-        "ok": False,
-        "error": {"code": error.code, "message": str(error)},
-    }
+from ogm_agent_bridge.responses import envelope, safe_error
+from ogm_agent_bridge.tools import list_datasets
 
 
 async def health(client: OGMClient) -> dict[str, Any]:
@@ -55,6 +31,14 @@ def create_server(settings: Settings | None = None) -> FastMCP:
         try:
             async with OGMClient(resolved_settings) as client:
                 return await health(client)
+        except BridgeError as error:
+            return safe_error(error)
+
+    @server.tool(description="List datasets visible in configured project.")
+    async def ogm_list_datasets() -> dict[str, Any]:
+        try:
+            async with OGMClient(resolved_settings) as client:
+                return await list_datasets(client)
         except BridgeError as error:
             return safe_error(error)
 

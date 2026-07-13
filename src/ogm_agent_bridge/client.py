@@ -36,6 +36,11 @@ class OGMClient:
         if self._owns_client:
             await self._client.aclose()
 
+    @property
+    def project_id(self) -> str:
+        """Configured project scope."""
+        return self._settings.project_id
+
     async def request(
         self,
         method: str,
