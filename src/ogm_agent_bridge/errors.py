@@ -55,6 +55,10 @@ class TransportError(BridgeError):
     code = "transport_error"
 
 
+class AmbiguousWriteError(UpstreamError):
+    """Core may have accepted write before gateway failure."""
+
+
 def error_from_status(status_code: int, message: str = "Request failed") -> BridgeError:
     """Map upstream HTTP status to public error type."""
     mapping: dict[int, type[BridgeError]] = {

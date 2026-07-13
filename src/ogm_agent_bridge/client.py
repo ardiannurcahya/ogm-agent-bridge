@@ -8,7 +8,12 @@ from typing import Any
 import httpx
 
 from ogm_agent_bridge.config import Settings
-from ogm_agent_bridge.errors import TimeoutError, TransportError, error_from_status
+from ogm_agent_bridge.errors import (
+    AmbiguousWriteError,
+    TimeoutError,
+    TransportError,
+    error_from_status,
+)
 
 _RETRYABLE_STATUS_CODES = frozenset({502, 503})
 
@@ -49,6 +54,7 @@ class OGMClient:
         files: Any = None,
         authenticated: bool = True,
         retry: bool = True,
+        ambiguous_write: bool = False,
     ) -> httpx.Response:
         """Send core request; callers disable retry for non-idempotent writes."""
         headers = (
@@ -82,7 +88,11 @@ class OGMClient:
                 await response.aclose()
                 continue
             if response.is_error:
-                raise error_from_status(response.status_code, _message(response))
+                message = _message(response)
+                await response.aclose()
+                if ambiguous_write and response.status_code in _RETRYABLE_STATUS_CODES:
+                    raise AmbiguousWriteError(message)
+                raise error_from_status(response.status_code, message)
             return response
         raise AssertionError("retry loop must return or raise")
 

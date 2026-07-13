@@ -32,26 +32,31 @@ class StateStore:
         )
         row = self.db.execute("SELECT version FROM schema_version").fetchone()
         if row is None:
-            self.db.execute("INSERT INTO schema_version VALUES (2)")
+            self.db.execute("INSERT INTO schema_version VALUES (3)")
             self.db.executescript("""
             CREATE TABLE users (project_id TEXT NOT NULL, external_id TEXT NOT NULL, core_id TEXT, status TEXT NOT NULL CHECK(status IN ('provisioning','active','uncertain')), PRIMARY KEY(project_id, external_id));
             CREATE TABLE agents (project_id TEXT NOT NULL, name TEXT NOT NULL, core_id TEXT, status TEXT NOT NULL CHECK(status IN ('provisioning','active','uncertain')), PRIMARY KEY(project_id, name));
-            CREATE TABLE sessions (project_id TEXT NOT NULL, bridge_id TEXT NOT NULL, user_external_id TEXT NOT NULL, agent_name TEXT NOT NULL, core_id TEXT, status TEXT NOT NULL CHECK(status IN ('provisioning','active','uncertain')), PRIMARY KEY(project_id, bridge_id));
+            CREATE TABLE sessions (project_id TEXT NOT NULL, bridge_id TEXT NOT NULL, user_external_id TEXT NOT NULL, agent_name TEXT NOT NULL, core_id TEXT, status TEXT NOT NULL CHECK(status IN ('provisioning','active','uncertain')), write_blocked INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(project_id, bridge_id));
             """)
         elif row[0] == 1:
             try:
                 self.db.executescript("""
                 BEGIN;
-                CREATE TABLE sessions_v2 (project_id TEXT NOT NULL, bridge_id TEXT NOT NULL, user_external_id TEXT NOT NULL, agent_name TEXT NOT NULL, core_id TEXT, status TEXT NOT NULL CHECK(status IN ('provisioning','active','uncertain')), PRIMARY KEY(project_id, bridge_id));
+                CREATE TABLE sessions_v2 (project_id TEXT NOT NULL, bridge_id TEXT NOT NULL, user_external_id TEXT NOT NULL, agent_name TEXT NOT NULL, core_id TEXT, status TEXT NOT NULL CHECK(status IN ('provisioning','active','uncertain')), write_blocked INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(project_id, bridge_id));
                 INSERT INTO sessions_v2(project_id, bridge_id, user_external_id, agent_name, core_id, status) SELECT project_id, bridge_id, user_external_id, agent_name, core_id, status FROM sessions;
                 DROP TABLE sessions;
                 ALTER TABLE sessions_v2 RENAME TO sessions;
-                UPDATE schema_version SET version=2;
+                UPDATE schema_version SET version=3;
                 COMMIT;
                 """)
             except Exception:
                 self.db.rollback()
                 raise
+        elif row[0] == 2:
+            self.db.execute(
+                "ALTER TABLE sessions ADD COLUMN write_blocked INTEGER NOT NULL DEFAULT 0"
+            )
+            self.db.execute("UPDATE schema_version SET version=3")
         self.db.commit()
 
     def _recover_interrupted_writes(self) -> None:
@@ -99,7 +104,7 @@ class StateStore:
     def begin_session(self, user: str, agent: str) -> str:
         bridge_id = str(uuid.uuid4())
         self.db.execute(
-            "INSERT INTO sessions VALUES(?,?,?,?,?,?)",
+            "INSERT INTO sessions(project_id,bridge_id,user_external_id,agent_name,core_id,status) VALUES(?,?,?,?,?,?)",
             (self.project_id, bridge_id, user, agent, None, "provisioning"),
         )
         self.db.commit()
@@ -119,9 +124,17 @@ class StateStore:
         )
         self.db.commit()
 
+    def block_session_writes(self, bridge_id: str) -> None:
+        """Fail closed after a message write whose outcome is unknown."""
+        self.db.execute(
+            "UPDATE sessions SET write_blocked=1 WHERE project_id=? AND bridge_id=?",
+            (self.project_id, bridge_id),
+        )
+        self.db.commit()
+
     def resolve_session(self, bridge_id: str) -> str | None:
         row = self.db.execute(
-            "SELECT core_id,status FROM sessions WHERE project_id=? AND bridge_id=?",
+            "SELECT core_id,status,write_blocked FROM sessions WHERE project_id=? AND bridge_id=?",
             (self.project_id, bridge_id),
         ).fetchone()
-        return row[0] if row and row[1] == "active" else None
+        return row[0] if row and row[1] == "active" and not row[2] else None

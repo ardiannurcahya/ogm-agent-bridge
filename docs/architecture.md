@@ -47,6 +47,10 @@ Convert core/transport failures to structured MCP tool errors. Include stable br
 | timeout/transport | `UPSTREAM_TIMEOUT` / `UPSTREAM_TRANSPORT` | Bounded retry then fail |
 | `422` | `VALIDATION_FAILED` | Input violates core constraint |
 
+## State repair
+
+SQLite schema v3 blocks a session after ambiguous `remember` timeout, transport, `502`, or `503`. Later writes fail closed. No automatic repair: inspect core first, then manually repair or replace local state only after confirmed outcome.
+
 ## Out of scope: 0.1.0
 
 No cross-harness session sync; automatic conversation ingestion; manifest generator; full permission-policy engine; OpenClaw plugin; destructive tools; HTTP MCP transport. No direct PostgreSQL, Qdrant, Neo4j, object-store access. No admin/project creation.
