@@ -11,8 +11,12 @@ requires-python = ">=3.11"
 license = { file = "LICENSE" }
 dependencies = [
   "httpx>=0.27,<1",
+  "mcp>=1.0,<2",
   "python-dotenv>=1,<2",
 ]
+
+[project.scripts]
+ogm-agent-bridge = "ogm_agent_bridge.mcp_server:main"
 
 [dependency-groups]
 dev = [

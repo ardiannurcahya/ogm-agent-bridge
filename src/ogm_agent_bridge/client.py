@@ -42,12 +42,17 @@ class OGMClient:
         path: str,
         *,
         json: Mapping[str, Any] | None = None,
+        authenticated: bool = True,
     ) -> httpx.Response:
-        """Send authenticated request; retry transient failures only."""
-        headers = {
-            "X-API-Key": self._settings.api_key,
-            "X-Project-Id": self._settings.project_id,
-        }
+        """Send core request; retry transient failures only."""
+        headers = (
+            {
+                "X-API-Key": self._settings.api_key,
+                "X-Project-Id": self._settings.project_id,
+            }
+            if authenticated
+            else {}
+        )
         for attempt in range(self._settings.max_retries + 1):
             try:
                 response = await self._client.request(
