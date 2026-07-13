@@ -10,7 +10,7 @@ import httpx
 from ogm_agent_bridge.config import Settings
 from ogm_agent_bridge.errors import TimeoutError, TransportError, error_from_status
 
-_RETRYABLE_STATUS_CODES = frozenset({429, 502, 503, 504})
+_RETRYABLE_STATUS_CODES = frozenset({502, 503})
 
 
 class OGMClient:
