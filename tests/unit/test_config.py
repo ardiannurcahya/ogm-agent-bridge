@@ -27,7 +27,9 @@ def test_loads_dotenv_file(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> N
     monkeypatch.delenv("OGM_API_KEY", raising=False)
     monkeypatch.delenv("OGM_PROJECT_ID", raising=False)
     dotenv = tmp_path / ".env"
-    dotenv.write_text("OGM_BASE_URL=https://core.test\nOGM_API_KEY=k\nOGM_PROJECT_ID=p\n")
+    dotenv.write_text(
+        "OGM_BASE_URL=https://core.test\nOGM_API_KEY=k\nOGM_PROJECT_ID=p\n"
+    )
 
     assert load_settings(dotenv_path=dotenv).project_id == "p"
 
