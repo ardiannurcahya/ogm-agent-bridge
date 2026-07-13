@@ -7,6 +7,7 @@ from typing import Any, Literal
 
 from mcp.server.fastmcp import FastMCP
 
+from ogm_agent_bridge import __version__
 from ogm_agent_bridge.client import OGMClient
 from ogm_agent_bridge.config import Settings, load_settings
 from ogm_agent_bridge.errors import BridgeError
@@ -216,4 +217,7 @@ def _tool_error(error: Exception) -> dict[str, Any]:
 
 def main() -> None:
     """Run MCP stdio server."""
+    if "--version" in sys.argv[1:]:
+        print(__version__)
+        return
     create_server().run(transport="stdio")
