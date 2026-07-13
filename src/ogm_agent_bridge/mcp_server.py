@@ -12,6 +12,7 @@ from ogm_agent_bridge.errors import BridgeError
 from ogm_agent_bridge.permissions import require_read
 from ogm_agent_bridge.responses import envelope, safe_error
 from ogm_agent_bridge.tools import list_datasets
+from ogm_agent_bridge.tools import query as run_query
 
 
 async def health(client: OGMClient) -> dict[str, Any]:
@@ -39,6 +40,15 @@ def create_server(settings: Settings | None = None) -> FastMCP:
         try:
             async with OGMClient(resolved_settings) as client:
                 return await list_datasets(client)
+        except BridgeError as error:
+            return safe_error(error)
+
+    @server.tool(description="Run grounded OpenGraphMemory retrieval.")
+    async def ogm_query(dataset_id: str, query: str, **options: Any) -> dict[str, Any]:
+        try:
+            arguments = {"dataset_id": dataset_id, "query": query, **options}
+            async with OGMClient(resolved_settings) as client:
+                return await run_query(client, arguments)
         except BridgeError as error:
             return safe_error(error)
 
