@@ -1,90 +1,141 @@
-# MCP tools 0.1.0
+# MCP tools
 
-All successful tools return envelope below. All project calls use configured project scope.
+Seven tools. All project calls use configured project. Input examples are copyable JSON argument objects.
 
-## Tool response envelope
+## Envelopes
+
+Success:
 
 ```json
-{
-  "ok": true,
-  "data": {},
-  "provenance": {
-    "project_id": "...",
-    "dataset_id": "...",
-    "session_id": "...",
-    "trace_id": "..."
-  },
-  "warnings": []
-}
+{"ok":true,"data":{},"provenance":{"project_id":"..."},"warnings":[]}
 ```
 
-Omit optional provenance keys when unavailable. Failure is structured MCP tool error, not success envelope.
+`provenance` keys appear only when known: `project_id`, `dataset_id`, `session_id`, `trace_id`.
+
+Failure returns tool result, not success envelope:
+
+```json
+{"ok":false,"error":{"code":"validation_error","message":"dataset_id must be a UUID"}}
+```
+
+Codes: `authentication_error`, `permission_denied`, `not_found`, `validation_error`, `payload_too_large`, `unsupported_media`, `upstream_error`, `timeout`, `transport_error`. Unexpected internal failures return `upstream_error` and `Internal bridge error`; no secret details.
 
 ## `ogm_health`
 
-- Risk: read. Permission: `health` allow.
-- Description: Core liveness check.
-- Input: none.
-- Core: `GET /health`.
-- Output `data`: `{status: "ok"}`.
-- Errors: upstream timeout/transport; unexpected core failure.
-- Note: no project auth required by core.
+Schema: no arguments. Permission: read. Core: `GET /health` without project headers. Response `data` is core health object.
+
+```json
+{}
+```
 
 ## `ogm_list_datasets`
 
-- Risk: read. Permission: `datasets:read` allow.
-- Description: List datasets visible in configured project.
-- Input: none.
-- Core: `GET /v1/datasets`.
-- Output `data`: `[{id, project_id, name, description?, metadata, status, error_message?}]`.
-- Errors: `401`, timeout, `502`, `503`.
+Schema: no arguments. Permission: `datasets:read`. Core: `GET /v1/datasets`. Response `data` is core dataset array.
+
+```json
+{}
+```
 
 ## `ogm_query`
 
-- Risk: read. Permission: `query:read` allow.
-- Description: Grounded retrieval. Preserve answer, citations, retrieval trace, usage.
-- Input: `dataset_id` string required; `query` string required, 1..10,000; `mode` optional `vector_only|graph_only|hybrid`, default `vector_only`; `top_k` optional int 1..50, default 5; `graph_depth` optional int 1..2; `graph_fanout` optional int 1..100; `graph_timeout_ms` optional int 1..10,000; `fusion` optional `rrf|weighted`; `session_id` optional bridge/core session ID; `memory_top_k` optional int 0..20, default 0.
-- Core: `POST /v1/query`; map resolved session to `memory_session_id`; mapping supplies `memory_user_id` and `memory_agent_id` when session used.
-- Output `data`: `{answer, citations: [{index, chunk_id, document_id, score, text}], retrieval_trace, usage}`. Provenance includes dataset/session/trace IDs.
-- Errors: validation `422`; `401`; dataset/session `404`; timeout; `502`; `503`.
-- Note: memory retrieval fields need session context. Core citation text stays unchanged.
+Permission: `query:read`. Core: `POST /v1/query`. Response `data` preserves core `{answer, citations, retrieval_trace, usage}`.
+
+| Argument | Type | Required | Rule/default |
+|---|---|---:|---|
+| `dataset_id` | string | yes | Non-empty. Core dataset ID. |
+| `query` | string | yes | 1..10,000 chars. |
+| `mode` | string | no | `vector_only`, `graph_only`, `hybrid`; omitted lets core default `vector_only`. |
+| `top_k` | integer | no | 1..50; core default `5`. |
+| `graph_depth` | integer | no | 1..2. |
+| `graph_fanout` | integer | no | 1..100. |
+| `graph_timeout_ms` | integer | no | 1..10,000. |
+| `fusion` | string | no | `rrf` or `weighted`. |
+| `memory_user_id` | string | no | Core memory user ID. |
+| `memory_agent_id` | string | no | Core memory agent ID. |
+| `memory_session_id` | string | no | Core memory session ID. |
+| `memory_top_k` | integer | no | 0..20; core default `0`. |
+
+```json
+{"dataset_id":"11111111-1111-1111-1111-111111111111","query":"What is retention policy?","mode":"hybrid","top_k":5,"memory_session_id":"core-session-id","memory_top_k":5}
+```
+
+**B1 ID rule:** query forwards `memory_user_id`, `memory_agent_id`, and `memory_session_id` unchanged. It accepts core IDs directly. It does **not** resolve bridge `session_id`. B2 mapping exists only in `ogm_remember`; do not pass returned bridge `session_id` as `memory_session_id` or imply bridge session works in query. See [session lifecycle](session-lifecycle.md).
 
 ## `ogm_search_memory`
 
-- Risk: read. Permission: `memory:read` allow.
-- Description: Search stored facts.
-- Input: `query` string required, 1..5000; `session_id` optional; `scopes` optional array of `user|agent|session`, defaults all; `limit` optional int 1..50, default 10; `include_superseded` optional bool, default false.
-- Core: `POST /v1/memory/search`; resolved session supplies `user_id`, `agent_id`, `session_id`.
-- Output `data`: facts with `{id, scope, subject, predicate, value, content, confidence, status, provenance, metadata, valid_from, ... score, matched_terms}`.
-- Errors: validation `422`; `401`; referenced scope/session `404`; timeout; `502`; `503`.
-- Note: lexical search only. Do not present as semantic retrieval.
+Permission: `memory:read`. Core: `POST /v1/memory/search`. Response warning says search is lexical, not semantic.
+
+| Argument | Type | Required | Rule/default |
+|---|---|---:|---|
+| `query` | string | yes | 1..5,000 chars. |
+| `user_id` | string | no | Core user ID. |
+| `agent_id` | string | no | Core agent ID. |
+| `session_id` | string | no | Core session ID. Not bridge ID. |
+| `scopes` | array | no | Elements `user`, `agent`, `session`; omitted lets core use all. |
+| `limit` | integer | no | 1..50; core default `10`. |
+| `include_superseded` | boolean | no | Core default `false`. |
+
+```json
+{"query":"retention","session_id":"core-session-id","scopes":["user","session"],"limit":10,"include_superseded":false}
+```
 
 ## `ogm_create_session`
 
-- Risk: write. Permission: `memory:write` allow in personal-safe.
-- Description: Provision core user+agent if absent; create session; persist SQLite mapping.
-- Input: `user_external_id` string required, 1..255; `agent_name` string required, 1..255; `user_display_name` optional string <=255; `agent_description` optional string <=5000; `title` optional string <=255; `metadata` optional object.
-- Core: conditional `POST /v1/memory/users`, conditional `POST /v1/memory/agents`, then `POST /v1/memory/sessions`.
-- Output `data`: `{session_id, core_session_id, user_id, agent_id, title, metadata, archived_at}`. Provenance includes project/session IDs.
-- Errors: permission denied; validation `422`; `401`; identity/session `404`; timeout; `502`; `503`.
-- Note: core session requires existing user and agent. SQLite retains mapping because core has no session list endpoint.
+Permission: `memory:write`; only `personal-safe`. Creates/reuses locally mapped core user and agent, then creates core session. Exact metadata fields are separate.
+
+| Argument | Type | Required | Rule |
+|---|---|---:|---|
+| `user_external_id` | string | yes | 1..255. |
+| `agent_name` | string | yes | 1..255. Stable identity key. |
+| `user_display_name` | string | no | 0..255. |
+| `agent_description` | string | no | 0..5,000. |
+| `title` | string | no | 0..255. |
+| `user_metadata` | object | no | Sent only with user creation. |
+| `agent_metadata` | object | no | Sent only with agent creation. |
+| `session_metadata` | object | no | Sent only with session creation. |
+
+```json
+{"user_external_id":"me@example.com","agent_name":"claude-code","user_display_name":"Me","agent_description":"Coding assistant","title":"bridge docs","user_metadata":{"team":"docs"},"agent_metadata":{"harness":"claude"},"session_metadata":{"repo":"ogm-agent-bridge"}}
+```
+
+Response `data`: `{session_id, core_session_id, user_id, agent_id}`. `session_id` is bridge ID; retain for `ogm_remember`. Core session response fields such as `title`, `metadata`, and `archived_at` are not returned by bridge.
 
 ## `ogm_remember`
 
-- Risk: write. Permission: `memory:write` allow in personal-safe.
-- Description: Store one fact through mandatory message batch.
-- Input: `session_id` string required; `message` object required: `role` one of `system|user|assistant|tool`, `content` 1..50,000, optional `metadata`; `fact` object required: `scope` optional `user|agent|session`, default `user`; `subject` 1..255; `predicate` 1..100; `value` 1..5000; `confidence` optional int 0..100 default 100; `metadata` optional object.
-- Core: `POST /v1/memory/sessions/{core_session_id}/messages` with one message and one fact.
-- Output `data`: `{messages: [...], facts: [...]}`; fact follows core FactView shape. Provenance includes session ID.
-- Errors: permission denied; validation `422`; `401`; unknown session `404`; timeout; `502`; `503`.
-- Note: requires `session_id` from `ogm_create_session`. Facts cannot be posted alone.
+Permission: `memory:write`; only `personal-safe`. Resolves bridge `session_id` through local SQLite, then posts exactly one message and one fact to core batch endpoint.
+
+| Argument | Type | Required | Rule |
+|---|---|---:|---|
+| `session_id` | string | yes | Active bridge session ID from `ogm_create_session`. |
+| `message.role` | string | yes | `system`, `user`, `assistant`, `tool`. |
+| `message.content` | string | yes | 1..50,000. |
+| `message.metadata` | object | no | Sent with message. |
+| `fact.scope` | string | no | `user`, `agent`, `session`; default `user`. |
+| `fact.subject` | string | yes | 1..255. |
+| `fact.predicate` | string | yes | 1..100. |
+| `fact.value` | string | yes | 1..5,000. |
+| `fact.confidence` | integer | no | 0..100; core default `100`. |
+| `fact.metadata` | object | no | Sent with fact. |
+
+```json
+{"session_id":"bridge-session-id","message":{"role":"user","content":"Use uv for this project.","metadata":{"source":"chat"}},"fact":{"scope":"user","subject":"project","predicate":"uses","value":"uv","confidence":100,"metadata":{"verified":true}}}
+```
+
+Response `data`: core `{messages:[...],facts:[...]}`. Timeout, transport, or ambiguous upstream write blocks later writes for this bridge session; inspect before repair.
 
 ## `ogm_upload_document`
 
-- Risk: write. Permission: `documents:write` allow in personal-safe.
-- Description: Upload one document into existing dataset.
-- Input: `dataset_id` string required; `filename` string required; `content` string/base64 bytes required; `mime_type` string required. Handler converts to multipart field `file`; enforce core upload/type/size limits without claiming bridge-specific limit.
-- Core: `POST /v1/datasets/{dataset_id}/documents` multipart.
-- Output `data`: `{id, project_id, dataset_id, filename, mime_type, size_bytes, content_hash, object_key, status, error_message?, duplicate, created_at, updated_at}`.
-- Errors: permission denied; `401`; dataset `404`; `413`; `415`; timeout; `502`; `503`.
-- Note: same content hash in same project/dataset yields existing document with `duplicate: true`.
+Permission: `documents:write`; only `personal-safe`. Core: multipart `POST /v1/datasets/{dataset_id}/documents` field `file`. File bytes come from local `path` inside approved upload roots.
+
+| Argument | Type | Required | Rule |
+|---|---|---:|---|
+| `dataset_id` | string | yes | UUID. |
+| `path` | string | yes | Non-empty local regular-file path inside `OGM_UPLOAD_ROOTS`. |
+| `filename` | string | no | Non-empty multipart filename; defaults basename of `path`. |
+| `mime_type` | string | no | Non-empty; defaults guessed type or `application/octet-stream`. |
+
+```json
+{"dataset_id":"11111111-1111-1111-1111-111111111111","path":"/home/me/project/docs/guide.md","filename":"guide.md","mime_type":"text/markdown"}
+```
+
+Response `data` preserves core document object. Core controls type and size limits. Upload sends selected file outside local machine: see [security](security.md).

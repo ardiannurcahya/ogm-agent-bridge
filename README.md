@@ -1,83 +1,70 @@
 # ogm-agent-bridge
 
-Agent harness bridge for [OpenGraphMemory](https://github.com/ardiannurcahya/open-graph-memory).
-
-Exposes OpenGraphMemory knowledge retrieval and agent memory to AI coding
-harnesses through a single MCP server, with adapters for **Claude Code**,
-**OpenCode**, and **Hermes**.
-
-## Status
-
-B4 complete: mock-core conformance coverage, optional isolated real-core smoke,
-and hardening for ambiguous writes, UUIDs, upload roots, and state finalization.
-B3 adapters and B2 read/write tools remain available; SQLite maps local session
-IDs to core IDs. See [conformance](docs/conformance.md).
-
-Harness setup: [Claude Code](docs/claude-code.md), [OpenCode](docs/opencode.md),
-and [Hermes](docs/hermes.md).
-
-## Development run
-
-```bash
-uv sync
-uv run ogm-agent-bridge
-```
-
-Server uses stdio. Keep stdout reserved for MCP protocol. Configure
-`OGM_BASE_URL`, `OGM_API_KEY`, and `OGM_PROJECT_ID`; `ogm_health` calls core
-`/health` without project headers.
-
-## What it does
-
-The bridge is a thin layer over the OpenGraphMemory REST API. It does not talk
-to PostgreSQL, Qdrant, or Neo4j directly — every operation goes through the
-core API using its `X-API-Key` + `X-Project-Id` auth model.
+MCP stdio bridge for [OpenGraphMemory](https://github.com/ardiannurcahya/open-graph-memory). One bridge process connects one core project to Claude Code, OpenCode, or Hermes.
 
 ```text
 Claude Code ─┐
-OpenCode ────┼── ogm-agent-bridge (MCP) ── OpenGraphMemory API
+OpenCode ────┼─ MCP stdio ─ ogm-agent-bridge ─ OpenGraphMemory REST
 Hermes ──────┘
 ```
 
-## Tools (target for 0.1.0)
+Bridge calls core REST only. No direct database, vector, graph, or object-store access. Seven tools cover health, datasets, retrieval, memory search, session creation, remembering facts, and local-file upload. No destructive tools exist.
 
-| Tool | Risk | Purpose |
-|---|---|---|
-| `ogm_health` | read | Check API and dependency readiness |
-| `ogm_list_datasets` | read | List datasets in the project |
-| `ogm_query` | read | Grounded retrieval (vector / graph / hybrid) with citations |
-| `ogm_search_memory` | read | Lexical search over stored memory facts |
-| `ogm_create_session` | write | Create a memory session (auto-provisions user + agent) |
-| `ogm_remember` | write | Store a memory fact within a session |
-| `ogm_upload_document` | write | Upload a document to a dataset |
+## Start from source
 
-## Configuration
-
-Copy `.env.example` to `.env` and fill in your OpenGraphMemory connection:
+Source install is current reliable setup. Package version is `0.1.0`, but no `v0.1.0` tag or PyPI publication exists yet.
 
 ```bash
+cd /root/ogm-agent-bridge
+uv sync --dev --locked
 cp .env.example .env
+# Edit .env. Set OGM_API_KEY and OGM_PROJECT_ID.
+uv run ogm-agent-bridge
 ```
 
-```env
-OGM_BASE_URL=http://localhost:8000
-OGM_API_KEY=<project-api-key>
-OGM_PROJECT_ID=<project-uuid>
-OGM_STATE_DB=~/.local/state/ogm-agent-bridge/state.db
-OGM_PERMISSION_PROFILE=personal-safe
+Server uses stdio. Keep stdout for MCP protocol. Logs go to stderr.
+
+`uvx ogm-agent-bridge` becomes valid **after 0.1.0 is published to PyPI**. Until then use source command above.
+
+## Configure harness
+
+- [Claude Code](docs/claude-code.md)
+- [OpenCode](docs/opencode.md)
+- [Hermes](docs/hermes.md)
+
+Harness examples use source command and environment variables. See [configuration](docs/configuration.md) for exact variables, permission profiles, upload roots, and separate named project configs.
+
+## First workflow
+
+1. Configure core connection in `.env`.
+2. Register bridge in harness guide above.
+3. Call `ogm_health`, then `ogm_list_datasets`.
+4. Call `ogm_query` with dataset ID.
+5. For memory writes, call `ogm_create_session`; retain returned bridge `session_id`; call `ogm_remember`.
+6. Upload only approved local files with `ogm_upload_document`.
+
+Copyable arguments, schemas, envelopes, and errors: [tools](docs/tools.md). Session IDs have important limits: [session lifecycle](docs/session-lifecycle.md).
+
+## Operations
+
+- [Security](docs/security.md): credentials, uploads, permissions, exfiltration boundary.
+- [Backup and recovery](docs/backup-recovery.md): SQLite backup, ambiguity repair, state-loss limit.
+- [Troubleshooting](docs/troubleshooting.md)
+- [Resource guidance](docs/resource-guidance.md)
+- [Upgrade and uninstall](docs/upgrade-uninstall.md)
+
+Engineering records: [architecture](docs/architecture.md), [core API audit](docs/api-audit.md), [conformance](docs/conformance.md), [release](docs/release.md), [plan](docs/plan.md).
+
+## Validate source checkout
+
+```bash
+uv sync --dev --locked
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy src
+uv run pytest -q
 ```
-
-One bridge instance maps to one OpenGraphMemory project (the API auth model is
-per-project). State database gets mode `0600`. `read-only` denies B2 writes;
-`personal-safe` allows them. Agent name is identity key: keep it stable.
-
-## Recovery limitation
-
-Normal restart reuses active SQLite mappings. Core has no public identity/session
-lookup. Lost state, timeout, or transport failure during provisioning becomes
-`uncertain`; bridge fails closed and never blindly retries POST. Inspect core
-before manual recovery.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

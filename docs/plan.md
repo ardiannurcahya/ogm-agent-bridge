@@ -57,7 +57,10 @@ Exit criteria:
 - Inspector calls all four read tools against mock core.
 - Query preserves citations and retrieval trace.
 
-### B2 — Session + write tools
+### B2 — Session + write tools — complete
+
+Implemented: SQLite state store; session creation, remember, and local-path upload;
+permission allowlist; backup/recovery limitation and docs verification coverage.
 
 Deliverables:
 
@@ -112,7 +115,11 @@ Exit criteria:
 - Every listed scenario passes.
 - Real-core suite runs when integration environment enabled.
 
-### B5 — Packaging
+### B5 — Packaging — complete
+
+Implemented: console entry point, package version foundation, CI package checks,
+tag-gated release workflow, release/install documentation, and source install.
+PyPI/`uvx` install remains future until package publication.
 
 Deliverables:
 
@@ -122,7 +129,7 @@ Deliverables:
 
 Exit criteria:
 
-- Clean machine command runs bridge with `uvx`.
+- After PyPI publication, clean-machine command runs bridge with `uvx`.
 - Version appears in package and release docs.
 - Install docs work for all three harnesses.
 

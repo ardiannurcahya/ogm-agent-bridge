@@ -17,16 +17,16 @@ Hermes ──────┘                 │                 │
 - **HTTP client.** Async REST client. Send `X-API-Key` and `X-Project-Id` on project calls. Bounded retries for transient transport/`502`/`503`; configured timeout. Preserve core response fields needed by tools.
 - **MCP server.** Stdio transport only in 0.1.0. Stdout reserved for MCP protocol.
 - **Tool handlers.** Validate MCP input, permission-check, call client, return common envelope and provenance.
-- **Permission layer.** Hardcoded 0.1.0 allowlist. `personal-safe`: reads plus create session, remember, upload document. No destructive calls.
+- **Permission layer.** Hardcoded 0.1.0 allowlist. `read-only`: reads only. `personal-safe`: reads plus create session, remember, upload document. No `full` profile. No destructive calls.
 - **State store.** Local SQLite. Stores harness-facing session mapping plus provisioned core user/agent IDs. Never stores project API key.
 
 ## Session model
 
 `ogm_create_session` takes stable harness identity inputs (`user_external_id`, `agent_name`) and optional title/metadata. Handler checks SQLite provisioned identity table. Missing user: call `POST /v1/memory/users`; missing agent: call `POST /v1/memory/agents`; save returned core IDs. Call `POST /v1/memory/sessions`, then save bridge session mapping: bridge session ID, core session ID, project ID, user ID, agent ID, harness identity, timestamps.
 
-Core currently has no user/agent lookup or upsert route. SQLite loss can therefore leave existing core identities unrecoverable through public API. Before B2 is complete, add verified core lookup/upsert support or define and test backup/restore of bridge state. Never silently create duplicate agents after state loss.
+Core currently has no user/agent lookup or upsert route. SQLite loss can therefore leave existing core identities unrecoverable through public API. Backup/restore is documented compatibility limitation. Never silently create duplicate agents after state loss.
 
-No core list-session/list-message API. SQLite mapping is source for bridge recovery and routing. `ogm_remember` resolves bridge/session input to core `session_id`, posts one message plus requested fact in messages batch. `ogm_query` forwards resolved `memory_session_id` and related memory scope IDs when caller requests memory retrieval.
+No core list-session/list-message API. SQLite mapping is source for bridge recovery and `ogm_remember` routing. `ogm_remember` resolves bridge `session_id` to core `session_id`, then posts one message plus requested fact in messages batch. `ogm_query` does not resolve bridge IDs: B1 query currently accepts core IDs directly; B2 mapping is only resolved by remember.
 
 ## Auth and secrets
 
