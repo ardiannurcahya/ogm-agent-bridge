@@ -52,3 +52,19 @@ async def test_server_exposes_explicit_read_tool_schemas() -> None:
     assert "session_id" in tools["ogm_search_memory"]["properties"]
     assert "include_superseded" in tools["ogm_search_memory"]["properties"]
     assert "options" not in tools["ogm_query"]["properties"]
+    create = tools["ogm_create_session"]
+    assert create["required"] == ["user_external_id", "agent_name"]
+    assert set(create["properties"]) >= {
+        "user_display_name",
+        "agent_description",
+        "user_metadata",
+        "agent_metadata",
+        "session_metadata",
+    }
+    remember = tools["ogm_remember"]
+    assert remember["required"] == ["session_id", "message", "fact"]
+    assert remember["properties"]["message"]["type"] == "object"
+    assert remember["properties"]["fact"]["type"] == "object"
+    upload = tools["ogm_upload_document"]
+    assert upload["required"] == ["dataset_id", "path"]
+    assert upload["properties"]["path"]["type"] == "string"

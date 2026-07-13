@@ -114,7 +114,14 @@ def create_server(settings: Settings | None = None) -> FastMCP:
         description="Provision stable user and agent identities then create session."
     )
     async def ogm_create_session(
-        user_external_id: str, agent_name: str, title: str | None = None
+        user_external_id: str,
+        agent_name: str,
+        user_display_name: str | None = None,
+        agent_description: str | None = None,
+        title: str | None = None,
+        user_metadata: dict[str, Any] | None = None,
+        agent_metadata: dict[str, Any] | None = None,
+        session_metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         try:
             from ogm_agent_bridge.state import StateStore
@@ -130,7 +137,12 @@ def create_server(settings: Settings | None = None) -> FastMCP:
                         _defined(
                             user_external_id=user_external_id,
                             agent_name=agent_name,
+                            user_display_name=user_display_name,
+                            agent_description=agent_description,
                             title=title,
+                            user_metadata=user_metadata,
+                            agent_metadata=agent_metadata,
+                            session_metadata=session_metadata,
                         ),
                     )
             finally:
@@ -141,11 +153,8 @@ def create_server(settings: Settings | None = None) -> FastMCP:
     @server.tool(description="Store one message and one fact in mapped active session.")
     async def ogm_remember(
         session_id: str,
-        content: str,
-        subject: str,
-        predicate: str,
-        value: str,
-        role: Literal["system", "user", "assistant", "tool"] = "user",
+        message: dict[str, Any],
+        fact: dict[str, Any],
     ) -> dict[str, Any]:
         try:
             from ogm_agent_bridge.state import StateStore
@@ -158,14 +167,7 @@ def create_server(settings: Settings | None = None) -> FastMCP:
                         client,
                         state,
                         resolved_settings.permission_profile,
-                        {
-                            "session_id": session_id,
-                            "content": content,
-                            "subject": subject,
-                            "predicate": predicate,
-                            "value": value,
-                            "role": role,
-                        },
+                        {"session_id": session_id, "message": message, "fact": fact},
                     )
             finally:
                 state.close()
