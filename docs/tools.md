@@ -1,6 +1,6 @@
 # MCP tools
 
-Seven tools. All project calls use configured project. Input examples are copyable JSON argument objects.
+Eleven tools. Target core commit `7703d3994b49272bef7b0d38caf896cde4338f13`. All project calls use configured project. Input examples are copyable JSON argument objects.
 
 ## Envelopes
 
@@ -44,7 +44,7 @@ Permission: `query:read`. Core: `POST /v1/query`. Response `data` preserves core
 |---|---|---:|---|
 | `dataset_id` | string | yes | Non-empty. Core dataset ID. |
 | `query` | string | yes | 1..10,000 chars. |
-| `mode` | string | no | `vector_only`, `graph_only`, `hybrid`; omitted lets core default `vector_only`. |
+| `mode` | string | no | `vector_only`, `graph_only`, `graph_local`, `graph_global`, `hybrid`; no `auto`. Omitted lets core default `vector_only`. |
 | `top_k` | integer | no | 1..50; core default `5`. |
 | `graph_depth` | integer | no | 1..2. |
 | `graph_fanout` | integer | no | 1..100. |
@@ -54,12 +54,51 @@ Permission: `query:read`. Core: `POST /v1/query`. Response `data` preserves core
 | `memory_agent_id` | string | no | Core memory agent ID. |
 | `memory_session_id` | string | no | Core memory session ID. |
 | `memory_top_k` | integer | no | 0..20; core default `0`. |
+| `include_communities` | boolean | no | Include community results. |
+| `community_level` | integer | no | 0..2. |
 
 ```json
 {"dataset_id":"11111111-1111-1111-1111-111111111111","query":"What is retention policy?","mode":"hybrid","top_k":5,"memory_session_id":"core-session-id","memory_top_k":5}
 ```
 
 **B1 ID rule:** query forwards `memory_user_id`, `memory_agent_id`, and `memory_session_id` unchanged. It accepts core IDs directly. It does **not** resolve bridge `session_id`. B2 mapping exists only in `ogm_remember`; do not pass returned bridge `session_id` as `memory_session_id` or imply bridge session works in query. See [session lifecycle](session-lifecycle.md).
+
+## `ogm_graph_explorer`
+
+Permission: `graph:read`. Core: `GET /v1/datasets/{dataset_id}/graph/explorer`. Response `data` preserves core response.
+
+| Argument | Type | Required | Rule |
+|---|---|---:|---|
+| `dataset_id` | string | yes | Non-empty. |
+| `node_limit` | integer | no | 1..200. |
+| `relation_limit` | integer | no | 1..200. |
+| `community_level` | integer | no | 0..2. |
+
+## `ogm_list_community_reports`
+
+Permission: `graph:read`. Core: `GET /v1/datasets/{dataset_id}/community-reports?community_level=`. Response `data` preserves core response.
+
+| Argument | Type | Required | Rule |
+|---|---|---:|---|
+| `dataset_id` | string | yes | Non-empty. |
+| `community_level` | integer | no | 0..2. |
+
+## `ogm_get_community_report`
+
+Permission: `graph:read`. Core: `GET /v1/datasets/{dataset_id}/community-reports/{report_id}`. Response `data` preserves core response. Provenance includes `project_id`, `dataset_id`, `report_id`.
+
+| Argument | Type | Required | Rule |
+|---|---|---:|---|
+| `dataset_id` | string | yes | Non-empty. |
+| `report_id` | string | yes | Non-empty. |
+
+## `ogm_list_community_report_jobs`
+
+Permission: `graph:read`. Core: `GET /v1/datasets/{dataset_id}/community-report-jobs`. Response `data` preserves core response.
+
+| Argument | Type | Required | Rule |
+|---|---|---:|---|
+| `dataset_id` | string | yes | Non-empty. |
 
 ## `ogm_search_memory`
 
@@ -138,4 +177,4 @@ Permission: `documents:write`; only `personal-safe`. Core: multipart `POST /v1/d
 {"dataset_id":"11111111-1111-1111-1111-111111111111","path":"/home/me/project/docs/guide.md","filename":"guide.md","mime_type":"text/markdown"}
 ```
 
-Response `data` preserves core document object. Core controls type and size limits. Upload sends selected file outside local machine: see [security](security.md).
+Response `data` preserves core document object. `.json` defaults to `application/json`; multipart carries raw file bytes. Core validates malformed JSON and other file content. Core controls type and size limits. Upload sends selected file outside local machine: see [security](security.md).

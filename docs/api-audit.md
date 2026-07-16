@@ -1,6 +1,6 @@
 # OpenGraphMemory core API audit
 
-Factual REST contract verified against OpenGraphMemory core source. Bridge calls core only. Default direct API base URL is `http://localhost:8000`; paths below are used as written, for example `http://localhost:8000/v1/query`. A reverse proxy may expose a different external base URL, configured through `OGM_BASE_URL`.
+Factual REST contract verified against OpenGraphMemory core commit `7703d3994b49272bef7b0d38caf896cde4338f13`. Bridge calls core only. Default direct API base URL is `http://localhost:8000`; paths below are used as written, for example `http://localhost:8000/v1/query`. A reverse proxy may expose a different external base URL, configured through `OGM_BASE_URL`.
 
 ## Auth model
 
@@ -23,7 +23,7 @@ JSON request:
 |---|---|---|---|
 | `dataset_id` | string | yes | Existing dataset in project |
 | `query` | string | yes | 1..10,000 chars |
-| `mode` | `vector_only` \| `graph_only` \| `hybrid` | no | `vector_only` |
+| `mode` | `vector_only` \| `graph_only` \| `graph_local` \| `graph_global` \| `hybrid` | no | `vector_only`; no `auto` |
 | `top_k` | integer | no | 1..50; `5` |
 | `graph_depth` | integer | no | 1..2 |
 | `graph_fanout` | integer | no | 1..100 |
@@ -33,6 +33,8 @@ JSON request:
 | `memory_agent_id` | string | no | Existing scoped agent |
 | `memory_session_id` | string | no | Existing scoped session |
 | `memory_top_k` | integer | no | 0..20; `0` |
+| `include_communities` | boolean | no | Include communities |
+| `community_level` | integer | no | 0..2 |
 
 Response: `{answer: string, citations: [{index, chunk_id, document_id, score, text}], retrieval_trace: {trace_id?, mode?, latency_ms?, chunk_ids: [], scores: [], ...}, usage: {prompt_tokens, completion_tokens, total_tokens, estimated_cost_usd}}`.
 
@@ -95,6 +97,14 @@ Response: `{answer: string, citations: [{index, chunk_id, document_id, score, te
 `GET /v1/entities/{entity_id}/neighbors?limit=25` → `[{relation: Relation, entity: Entity}]`; limit constraint 1..100.
 
 `GET /v1/datasets/{dataset_id}/graph?limit=100&depth=1` → `GraphSummary`; `limit` 1..200, `depth` 0..1. This differs from `POST /v1/query`, whose `graph_depth` accepts 1..2.
+
+`GET /v1/datasets/{dataset_id}/graph/explorer?node_limit=1..200&relation_limit=1..200&community_level=0..2` → graph explorer response.
+
+`GET /v1/datasets/{dataset_id}/community-reports?community_level=0..2` → community report list.
+
+`GET /v1/datasets/{dataset_id}/community-reports/{report_id}` → community report.
+
+`GET /v1/datasets/{dataset_id}/community-report-jobs` → community report job list.
 
 `GET /v1/evidence/{evidence_id}` → `Evidence`.
 

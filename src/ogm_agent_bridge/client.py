@@ -50,6 +50,7 @@ class OGMClient:
         path: str,
         *,
         json: Mapping[str, Any] | None = None,
+        params: Mapping[str, Any] | None = None,
         data: Mapping[str, Any] | None = None,
         files: Any = None,
         authenticated: bool = True,
@@ -73,6 +74,7 @@ class OGMClient:
                     httpx.URL(self._settings.base_url).join(path),
                     headers=headers,
                     json=json,
+                    params=params,
                     data=data,
                     files=files,
                 )

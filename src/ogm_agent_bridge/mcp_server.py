@@ -14,6 +14,10 @@ from ogm_agent_bridge.errors import BridgeError
 from ogm_agent_bridge.permissions import require_read
 from ogm_agent_bridge.responses import envelope, safe_error
 from ogm_agent_bridge.tools import (
+    get_community_report,
+    graph_explorer,
+    list_community_report_jobs,
+    list_community_reports,
     list_datasets,
 )
 from ogm_agent_bridge.tools import (
@@ -56,7 +60,10 @@ def create_server(settings: Settings | None = None) -> FastMCP:
     async def ogm_query(
         dataset_id: str,
         query: str,
-        mode: Literal["vector_only", "graph_only", "hybrid"] | None = None,
+        mode: Literal[
+            "vector_only", "graph_only", "graph_local", "graph_global", "hybrid"
+        ]
+        | None = None,
         top_k: int | None = None,
         graph_depth: int | None = None,
         graph_fanout: int | None = None,
@@ -66,6 +73,8 @@ def create_server(settings: Settings | None = None) -> FastMCP:
         memory_agent_id: str | None = None,
         memory_session_id: str | None = None,
         memory_top_k: int | None = None,
+        include_communities: bool | None = None,
+        community_level: int | None = None,
     ) -> dict[str, Any]:
         try:
             arguments = _defined(
@@ -81,9 +90,67 @@ def create_server(settings: Settings | None = None) -> FastMCP:
                 memory_agent_id=memory_agent_id,
                 memory_session_id=memory_session_id,
                 memory_top_k=memory_top_k,
+                include_communities=include_communities,
+                community_level=community_level,
             )
             async with OGMClient(resolved_settings) as client:
                 return await run_query(client, arguments)
+        except Exception as error:
+            return _tool_error(error)
+
+    @server.tool(description="Explore dataset graph, relations, and communities.")
+    async def ogm_graph_explorer(
+        dataset_id: str,
+        node_limit: int | None = None,
+        relation_limit: int | None = None,
+        community_level: int | None = None,
+    ) -> dict[str, Any]:
+        try:
+            async with OGMClient(resolved_settings) as client:
+                return await graph_explorer(
+                    client,
+                    _defined(
+                        dataset_id=dataset_id,
+                        node_limit=node_limit,
+                        relation_limit=relation_limit,
+                        community_level=community_level,
+                    ),
+                )
+        except Exception as error:
+            return _tool_error(error)
+
+    @server.tool(description="List dataset community reports.")
+    async def ogm_list_community_reports(
+        dataset_id: str, community_level: int | None = None
+    ) -> dict[str, Any]:
+        try:
+            async with OGMClient(resolved_settings) as client:
+                return await list_community_reports(
+                    client,
+                    _defined(dataset_id=dataset_id, community_level=community_level),
+                )
+        except Exception as error:
+            return _tool_error(error)
+
+    @server.tool(description="Get one dataset community report.")
+    async def ogm_get_community_report(
+        dataset_id: str, report_id: str
+    ) -> dict[str, Any]:
+        try:
+            async with OGMClient(resolved_settings) as client:
+                return await get_community_report(
+                    client, _defined(dataset_id=dataset_id, report_id=report_id)
+                )
+        except Exception as error:
+            return _tool_error(error)
+
+    @server.tool(description="List dataset community report jobs.")
+    async def ogm_list_community_report_jobs(dataset_id: str) -> dict[str, Any]:
+        try:
+            async with OGMClient(resolved_settings) as client:
+                return await list_community_report_jobs(
+                    client, _defined(dataset_id=dataset_id)
+                )
         except Exception as error:
             return _tool_error(error)
 

@@ -10,7 +10,9 @@ from ogm_agent_bridge.errors import ValidationError
 from ogm_agent_bridge.permissions import require_read
 from ogm_agent_bridge.responses import envelope
 
-_MODES = frozenset({"vector_only", "graph_only", "hybrid"})
+_MODES = frozenset(
+    {"vector_only", "graph_only", "graph_local", "graph_global", "hybrid"}
+)
 _FUSIONS = frozenset({"rrf", "weighted"})
 _SCOPES = frozenset({"user", "agent", "session"})
 
@@ -39,6 +41,8 @@ async def query(client: OGMClient, arguments: Mapping[str, Any]) -> dict[str, An
     _optional_string(arguments, payload, "memory_agent_id")
     _optional_string(arguments, payload, "memory_session_id")
     _integer(arguments, payload, "memory_top_k", 0, 20)
+    _optional_boolean(arguments, payload, "include_communities")
+    _integer(arguments, payload, "community_level", 0, 2)
     response = await client.request("POST", "/v1/query", json=payload, retry=False)
     data = response.json()
     provenance: dict[str, Any] = {
@@ -50,6 +54,77 @@ async def query(client: OGMClient, arguments: Mapping[str, Any]) -> dict[str, An
         if isinstance(trace_id, str):
             provenance["trace_id"] = trace_id
     return envelope(data, provenance=provenance)
+
+
+async def graph_explorer(
+    client: OGMClient, arguments: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Read dataset graph explorer response unchanged."""
+    require_read("graph:read")
+    dataset_id = _string(arguments, "dataset_id", 1)
+    params: dict[str, Any] = {}
+    _integer(arguments, params, "node_limit", 1, 200)
+    _integer(arguments, params, "relation_limit", 1, 200)
+    _integer(arguments, params, "community_level", 0, 2)
+    response = await client.request(
+        "GET", f"/v1/datasets/{dataset_id}/graph/explorer", params=params
+    )
+    return envelope(
+        response.json(),
+        provenance={"project_id": client.project_id, "dataset_id": dataset_id},
+    )
+
+
+async def list_community_reports(
+    client: OGMClient, arguments: Mapping[str, Any]
+) -> dict[str, Any]:
+    """List dataset community reports unchanged."""
+    require_read("graph:read")
+    dataset_id = _string(arguments, "dataset_id", 1)
+    params: dict[str, Any] = {}
+    _integer(arguments, params, "community_level", 0, 2)
+    response = await client.request(
+        "GET", f"/v1/datasets/{dataset_id}/community-reports", params=params
+    )
+    return envelope(
+        response.json(),
+        provenance={"project_id": client.project_id, "dataset_id": dataset_id},
+    )
+
+
+async def get_community_report(
+    client: OGMClient, arguments: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Get community report unchanged."""
+    require_read("graph:read")
+    dataset_id = _string(arguments, "dataset_id", 1)
+    report_id = _string(arguments, "report_id", 1)
+    response = await client.request(
+        "GET", f"/v1/datasets/{dataset_id}/community-reports/{report_id}"
+    )
+    return envelope(
+        response.json(),
+        provenance={
+            "project_id": client.project_id,
+            "dataset_id": dataset_id,
+            "report_id": report_id,
+        },
+    )
+
+
+async def list_community_report_jobs(
+    client: OGMClient, arguments: Mapping[str, Any]
+) -> dict[str, Any]:
+    """List dataset community report jobs unchanged."""
+    require_read("graph:read")
+    dataset_id = _string(arguments, "dataset_id", 1)
+    response = await client.request(
+        "GET", f"/v1/datasets/{dataset_id}/community-report-jobs"
+    )
+    return envelope(
+        response.json(),
+        provenance={"project_id": client.project_id, "dataset_id": dataset_id},
+    )
 
 
 async def search_memory(
@@ -118,6 +193,17 @@ def _optional_string(
     value = arguments[name]
     if type(value) is not str or not value:
         raise ValidationError(f"{name} must be a non-empty string")
+    payload[name] = value
+
+
+def _optional_boolean(
+    arguments: Mapping[str, Any], payload: dict[str, Any], name: str
+) -> None:
+    if name not in arguments:
+        return
+    value = arguments[name]
+    if type(value) is not bool:
+        raise ValidationError(f"{name} must be a boolean")
     payload[name] = value
 
 

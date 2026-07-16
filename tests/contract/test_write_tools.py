@@ -293,6 +293,30 @@ async def test_upload_regular_file_validation_and_multipart(
             (tmp_path.resolve(),),
         )
     assert result["data"] == {"id": "doc"}
+
+    json_source = tmp_path / "document.json"
+    json_source.write_text('{"key":"value"}')
+
+    async def json_handler(request: httpx.Request) -> httpx.Response:
+        assert request.headers["content-type"].startswith("multipart/form-data;")
+        assert b'name="file"; filename="document.json"' in request.content
+        assert b"Content-Type: application/json" in request.content
+        assert b'{"key":"value"}' in request.content
+        return httpx.Response(201, json={"id": "json-doc"})
+
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(json_handler)
+    ) as http_client:
+        result = await upload_document(
+            OGMClient(settings, http_client),
+            "personal-safe",
+            "00000000-0000-0000-0000-000000000002",
+            str(json_source),
+            None,
+            None,
+            (tmp_path.resolve(),),
+        )
+    assert result["data"] == {"id": "json-doc"}
     with pytest.raises(ValidationError):
         await upload_document(
             OGMClient(settings),

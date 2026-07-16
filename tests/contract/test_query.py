@@ -22,14 +22,24 @@ async def test_query_preserves_core_fields() -> None:
         assert json.loads(request.content) == {
             "dataset_id": "dataset",
             "query": "question",
+            "mode": "graph_global",
             "top_k": 2,
+            "include_communities": True,
+            "community_level": 2,
         }
         return httpx.Response(200, json=core)
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
         result = await query(
             OGMClient(Settings("https://core.test", "key", "project"), http_client),
-            {"dataset_id": "dataset", "query": "question", "top_k": 2},
+            {
+                "dataset_id": "dataset",
+                "query": "question",
+                "mode": "graph_global",
+                "top_k": 2,
+                "include_communities": True,
+                "community_level": 2,
+            },
         )
 
     assert result["data"] == core
@@ -42,8 +52,13 @@ async def test_query_preserves_core_fields() -> None:
 
 @pytest.mark.asyncio
 async def test_query_rejects_core_invalid_input() -> None:
-    with pytest.raises(ValidationError):
-        await query(
-            OGMClient(Settings("https://core.test", "key", "project")),
-            {"dataset_id": "", "query": "q"},
-        )
+    client = OGMClient(Settings("https://core.test", "key", "project"))
+    for arguments in (
+        {"dataset_id": "", "query": "q"},
+        {"dataset_id": "dataset", "query": "q", "mode": "auto"},
+        {"dataset_id": "dataset", "query": "q", "community_level": 3},
+        {"dataset_id": "dataset", "query": "q", "include_communities": 1},
+    ):
+        with pytest.raises(ValidationError):
+            await query(client, arguments)
+    await client.aclose()

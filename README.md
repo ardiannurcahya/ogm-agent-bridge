@@ -25,7 +25,7 @@ flowchart LR
     BR -->|Authenticated HTTP| API
 ```
 
-`ogm-agent-bridge` validates tool input, enforces local permissions, calls core REST APIs, and keeps required local session mappings in SQLite.
+`ogm-agent-bridge` targets OpenGraphMemory core `7703d3994b49272bef7b0d38caf896cde4338f13`. It validates tool input, enforces local permissions, calls core REST APIs, and keeps required local session mappings in SQLite.
 
 It exposes no destructive, admin, project-creation, or direct-storage tools.
 
@@ -42,8 +42,8 @@ It exposes no destructive, admin, project-creation, or direct-storage tools.
 
 ## What agents can do
 
-- Ask grounded questions over one dataset with vector, graph, or hybrid retrieval.
-- Inspect available datasets before choosing retrieval target.
+- Ask grounded questions with `vector_only`, `graph_only`, `graph_local`, `graph_global`, or `hybrid`; no `auto`.
+- Inspect datasets, graph explorer, community reports, and report jobs before retrieval.
 - Search stored memory for lexical matches in known user, agent, or core-session scope.
 - Create isolated memory session, then save one message and one fact per `ogm_remember` call.
 - Upload reviewed documentation from approved local roots into selected dataset.
@@ -58,6 +58,10 @@ Agents cannot delete or update data, create projects, administer core, or access
 | `ogm_health` | Check core health. | read |
 | `ogm_list_datasets` | List project datasets. | read |
 | `ogm_query` | Retrieve and query dataset content. | read |
+| `ogm_graph_explorer` | Explore dataset graph and communities. | read |
+| `ogm_list_community_reports` | List dataset community reports. | read |
+| `ogm_get_community_report` | Get one community report. | read |
+| `ogm_list_community_report_jobs` | List report jobs. | read |
 | `ogm_search_memory` | Search core memory. | read |
 | `ogm_create_session` | Create mapped memory session. | `personal-safe` |
 | `ogm_remember` | Store one message and one fact for bridge session. | `personal-safe` |

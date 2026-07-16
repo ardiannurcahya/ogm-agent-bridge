@@ -151,10 +151,10 @@ async def test_upload_root_symlink_mime_and_errors(
 
 
 @pytest.mark.asyncio
-async def test_mcp_seven_tool_schemas_and_safe_unexpected_error() -> None:
+async def test_mcp_eleven_tool_schemas_and_safe_unexpected_error() -> None:
     server = create_server(Settings("https://core.test", "key", "project"))
     tools = await server.list_tools()
-    assert len(tools) == 7
+    assert len(tools) == 11
     assert all(tool.inputSchema.get("type") == "object" for tool in tools)
     result = _tool_error(RuntimeError("secret path /private/token"))
     assert result["ok"] is False
