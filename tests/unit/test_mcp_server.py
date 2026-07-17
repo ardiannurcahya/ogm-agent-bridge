@@ -41,51 +41,27 @@ async def test_server_exposes_explicit_read_tool_schemas() -> None:
     assert set(tools) == {
         "ogm_health",
         "ogm_list_datasets",
-        "ogm_query",
-        "ogm_graph_explorer",
-        "ogm_list_community_reports",
-        "ogm_get_community_report",
-        "ogm_list_community_report_jobs",
-        "ogm_search_memory",
-        "ogm_create_session",
-        "ogm_remember",
+        "ogm_search_entities",
+        "ogm_get_entity",
+        "ogm_get_neighbors",
+        "ogm_find_path",
+        "ogm_get_subgraph",
+        "ogm_get_graph",
+        "ogm_get_evidence",
+        "ogm_get_relation_evidence",
         "ogm_upload_document",
     }
-    assert tools["ogm_query"]["properties"]["mode"]["anyOf"][0]["enum"] == [
-        "vector_only",
-        "graph_only",
-        "graph_local",
-        "graph_global",
-        "hybrid",
+    assert tools["ogm_search_entities"]["required"] == ["dataset_id", "q"]
+    assert tools["ogm_find_path"]["required"] == [
+        "dataset_id",
+        "source_entity_id",
+        "target_entity_id",
     ]
-    assert "include_communities" in tools["ogm_query"]["properties"]
-    assert "community_level" in tools["ogm_query"]["properties"]
-    assert "memory_session_id" in tools["ogm_query"]["properties"]
-    assert "graph_timeout_ms" in tools["ogm_query"]["properties"]
-    explorer = tools["ogm_graph_explorer"]
-    assert explorer["required"] == ["dataset_id"]
-    assert set(explorer["properties"]) >= {
-        "node_limit",
-        "relation_limit",
-        "community_level",
-    }
-    assert tools["ogm_get_community_report"]["required"] == ["dataset_id", "report_id"]
-    assert "session_id" in tools["ogm_search_memory"]["properties"]
-    assert "include_superseded" in tools["ogm_search_memory"]["properties"]
-    assert "options" not in tools["ogm_query"]["properties"]
-    create = tools["ogm_create_session"]
-    assert create["required"] == ["user_external_id", "agent_name"]
-    assert set(create["properties"]) >= {
-        "user_display_name",
-        "agent_description",
-        "user_metadata",
-        "agent_metadata",
-        "session_metadata",
-    }
-    remember = tools["ogm_remember"]
-    assert remember["required"] == ["session_id", "message", "fact"]
-    assert remember["properties"]["message"]["type"] == "object"
-    assert remember["properties"]["fact"]["type"] == "object"
+    assert tools["ogm_get_subgraph"]["required"] == ["dataset_id", "entity_id"]
+    assert tools["ogm_get_relation_evidence"]["required"] == [
+        "dataset_id",
+        "relation_id",
+    ]
     upload = tools["ogm_upload_document"]
     assert upload["required"] == ["dataset_id", "path"]
     assert upload["properties"]["path"]["type"] == "string"

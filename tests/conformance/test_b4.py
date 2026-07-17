@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import httpx
@@ -20,7 +19,7 @@ from ogm_agent_bridge.errors import (
     ValidationError,
 )
 from ogm_agent_bridge.mcp_server import _tool_error, create_server
-from ogm_agent_bridge.tools import query, search_memory
+from ogm_agent_bridge.tools import get_graph
 from ogm_agent_bridge.write_tools import upload_document
 
 
@@ -85,7 +84,7 @@ async def test_retry_and_no_retry_counts(settings: Settings) -> None:
 
 
 @pytest.mark.asyncio
-async def test_deep_query_response_and_memory_defaults_preserved(
+async def test_graph_response_is_preserved(
     settings: Settings,
 ) -> None:
     core = {
@@ -94,19 +93,12 @@ async def test_deep_query_response_and_memory_defaults_preserved(
     }
 
     async def handler(request: httpx.Request) -> httpx.Response:
-        payload = json.loads(request.content)
-        if request.url.path == "/v1/query":
-            assert payload == {"dataset_id": "dataset", "query": "q"}
-            return httpx.Response(200, json=core)
-        assert payload == {"query": "q"}
-        return httpx.Response(200, json=[])
+        assert request.url.path == "/v1/datasets/dataset/graph"
+        return httpx.Response(200, json=core)
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
         client = OGMClient(settings, http_client)
-        assert (await query(client, {"dataset_id": "dataset", "query": "q"}))[
-            "data"
-        ] == core
-        assert (await search_memory(client, {"query": "q"}))["data"] == []
+        assert (await get_graph(client, {"dataset_id": "dataset"}))["data"] == core
 
 
 @pytest.mark.asyncio
@@ -120,7 +112,10 @@ async def test_upload_root_symlink_mime_and_errors(
     outside = tmp_path / "outside.txt"
     outside.write_text("no")
     link = root / "link.txt"
-    link.symlink_to(outside)
+    try:
+        link.symlink_to(outside)
+    except OSError as error:
+        pytest.skip(f"symlink creation unavailable: {error}")
 
     async def handler(request: httpx.Request) -> httpx.Response:
         assert b"application/octet-stream" in request.content
@@ -151,7 +146,7 @@ async def test_upload_root_symlink_mime_and_errors(
 
 
 @pytest.mark.asyncio
-async def test_mcp_eleven_tool_schemas_and_safe_unexpected_error() -> None:
+async def test_mcp_graph_tool_schemas_and_safe_unexpected_error() -> None:
     server = create_server(Settings("https://core.test", "key", "project"))
     tools = await server.list_tools()
     assert len(tools) == 11

@@ -11,16 +11,19 @@ REQUIRED_ENV = {
     "OGM_BASE_URL",
     "OGM_API_KEY",
     "OGM_PROJECT_ID",
-    "OGM_STATE_DB",
     "OGM_PERMISSION_PROFILE",
 }
 EXPECTED_TOOLS = {
     "ogm_health",
     "ogm_list_datasets",
-    "ogm_query",
-    "ogm_search_memory",
-    "ogm_create_session",
-    "ogm_remember",
+    "ogm_search_entities",
+    "ogm_get_entity",
+    "ogm_get_neighbors",
+    "ogm_find_path",
+    "ogm_get_subgraph",
+    "ogm_get_graph",
+    "ogm_get_evidence",
+    "ogm_get_relation_evidence",
     "ogm_upload_document",
 }
 
@@ -81,7 +84,7 @@ def test_harness_docs_state_tool_expectation_and_safe_setup() -> None:
         content = _text(path)
         assert "/absolute/path/ogm-agent-bridge" in content
         assert "OGM_PERMISSION_PROFILE" in content
-        assert "7 tools" in content
+        assert "11 tools" in content
         assert "read-only" in content
         for tool in EXPECTED_TOOLS:
             assert tool in content

@@ -1,9 +1,10 @@
-"""B1 stdio MCP server."""
+"""Graph-first stdio MCP server."""
 
 from __future__ import annotations
 
 import sys
-from typing import Any, Literal
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
@@ -14,236 +15,126 @@ from ogm_agent_bridge.errors import BridgeError
 from ogm_agent_bridge.permissions import require_read
 from ogm_agent_bridge.responses import envelope, safe_error
 from ogm_agent_bridge.tools import (
-    get_community_report,
-    graph_explorer,
-    list_community_report_jobs,
-    list_community_reports,
+    find_path,
+    get_entity,
+    get_evidence,
+    get_graph,
+    get_neighbors,
+    get_relation_evidence,
+    get_subgraph,
     list_datasets,
-)
-from ogm_agent_bridge.tools import (
-    query as run_query,
-)
-from ogm_agent_bridge.tools import (
-    search_memory as run_memory_search,
+    search_entities,
 )
 
 
 async def health(client: OGMClient) -> dict[str, Any]:
-    """Call unauthenticated core health endpoint."""
     require_read("health")
     response = await client.request("GET", "/health", authenticated=False)
     return envelope(response.json())
 
 
 def create_server(settings: Settings | None = None) -> FastMCP:
-    """Create B1 MCP server."""
     resolved_settings = settings or load_settings()
     server = FastMCP("ogm-agent-bridge")
 
     @server.tool(description="Check OpenGraphMemory core liveness.")
     async def ogm_health() -> dict[str, Any]:
-        try:
-            async with OGMClient(resolved_settings) as client:
-                return await health(client)
-        except Exception as error:
-            return _tool_error(error)
+        return await _call(resolved_settings, health)
 
     @server.tool(description="List datasets visible in configured project.")
     async def ogm_list_datasets() -> dict[str, Any]:
-        try:
-            async with OGMClient(resolved_settings) as client:
-                return await list_datasets(client)
-        except Exception as error:
-            return _tool_error(error)
+        return await _call(resolved_settings, list_datasets)
 
-    @server.tool(description="Run grounded OpenGraphMemory retrieval.")
-    async def ogm_query(
+    @server.tool(description="Search supported graph entities in a dataset.")
+    async def ogm_search_entities(
         dataset_id: str,
-        query: str,
-        mode: Literal[
-            "vector_only", "graph_only", "graph_local", "graph_global", "hybrid"
-        ]
-        | None = None,
-        top_k: int | None = None,
-        graph_depth: int | None = None,
-        graph_fanout: int | None = None,
-        graph_timeout_ms: int | None = None,
-        fusion: Literal["rrf", "weighted"] | None = None,
-        memory_user_id: str | None = None,
-        memory_agent_id: str | None = None,
-        memory_session_id: str | None = None,
-        memory_top_k: int | None = None,
-        include_communities: bool | None = None,
-        community_level: int | None = None,
+        q: str,
+        entity_type: str | None = None,
+        limit: int | None = None,
     ) -> dict[str, Any]:
-        try:
-            arguments = _defined(
-                dataset_id=dataset_id,
-                query=query,
-                mode=mode,
-                top_k=top_k,
-                graph_depth=graph_depth,
-                graph_fanout=graph_fanout,
-                graph_timeout_ms=graph_timeout_ms,
-                fusion=fusion,
-                memory_user_id=memory_user_id,
-                memory_agent_id=memory_agent_id,
-                memory_session_id=memory_session_id,
-                memory_top_k=memory_top_k,
-                include_communities=include_communities,
-                community_level=community_level,
-            )
-            async with OGMClient(resolved_settings) as client:
-                return await run_query(client, arguments)
-        except Exception as error:
-            return _tool_error(error)
+        return await _call(
+            resolved_settings,
+            search_entities,
+            _defined(dataset_id=dataset_id, q=q, entity_type=entity_type, limit=limit),
+        )
 
-    @server.tool(description="Explore dataset graph, relations, and communities.")
-    async def ogm_graph_explorer(
+    @server.tool(description="Read one graph entity by ID.")
+    async def ogm_get_entity(entity_id: str) -> dict[str, Any]:
+        return await _call(resolved_settings, get_entity, entity_id)
+
+    @server.tool(description="Read bounded graph neighbors for one entity.")
+    async def ogm_get_neighbors(
+        entity_id: str, limit: int | None = None
+    ) -> dict[str, Any]:
+        return await _call(
+            resolved_settings, get_neighbors, _defined(entity_id=entity_id, limit=limit)
+        )
+
+    @server.tool(description="Find bounded graph path between two dataset entities.")
+    async def ogm_find_path(
         dataset_id: str,
+        source_entity_id: str,
+        target_entity_id: str,
+        max_depth: int | None = None,
+        relation_limit: int | None = None,
+    ) -> dict[str, Any]:
+        return await _call(
+            resolved_settings,
+            find_path,
+            _defined(
+                dataset_id=dataset_id,
+                source_entity_id=source_entity_id,
+                target_entity_id=target_entity_id,
+                max_depth=max_depth,
+                relation_limit=relation_limit,
+            ),
+        )
+
+    @server.tool(description="Read bounded graph subgraph around one entity.")
+    async def ogm_get_subgraph(
+        dataset_id: str,
+        entity_id: str,
+        depth: int | None = None,
         node_limit: int | None = None,
         relation_limit: int | None = None,
-        community_level: int | None = None,
     ) -> dict[str, Any]:
-        try:
-            async with OGMClient(resolved_settings) as client:
-                return await graph_explorer(
-                    client,
-                    _defined(
-                        dataset_id=dataset_id,
-                        node_limit=node_limit,
-                        relation_limit=relation_limit,
-                        community_level=community_level,
-                    ),
-                )
-        except Exception as error:
-            return _tool_error(error)
+        return await _call(
+            resolved_settings,
+            get_subgraph,
+            _defined(
+                dataset_id=dataset_id,
+                entity_id=entity_id,
+                depth=depth,
+                node_limit=node_limit,
+                relation_limit=relation_limit,
+            ),
+        )
 
-    @server.tool(description="List dataset community reports.")
-    async def ogm_list_community_reports(
-        dataset_id: str, community_level: int | None = None
+    @server.tool(description="Read bounded dataset graph summary.")
+    async def ogm_get_graph(
+        dataset_id: str, limit: int | None = None, depth: int | None = None
     ) -> dict[str, Any]:
-        try:
-            async with OGMClient(resolved_settings) as client:
-                return await list_community_reports(
-                    client,
-                    _defined(dataset_id=dataset_id, community_level=community_level),
-                )
-        except Exception as error:
-            return _tool_error(error)
+        return await _call(
+            resolved_settings,
+            get_graph,
+            _defined(dataset_id=dataset_id, limit=limit, depth=depth),
+        )
 
-    @server.tool(description="Get one dataset community report.")
-    async def ogm_get_community_report(
-        dataset_id: str, report_id: str
+    @server.tool(description="Read graph evidence by ID.")
+    async def ogm_get_evidence(evidence_id: str) -> dict[str, Any]:
+        return await _call(resolved_settings, get_evidence, evidence_id)
+
+    @server.tool(description="Read bounded evidence supporting one dataset relation.")
+    async def ogm_get_relation_evidence(
+        dataset_id: str, relation_id: str, limit: int | None = None
     ) -> dict[str, Any]:
-        try:
-            async with OGMClient(resolved_settings) as client:
-                return await get_community_report(
-                    client, _defined(dataset_id=dataset_id, report_id=report_id)
-                )
-        except Exception as error:
-            return _tool_error(error)
+        return await _call(
+            resolved_settings,
+            get_relation_evidence,
+            _defined(dataset_id=dataset_id, relation_id=relation_id, limit=limit),
+        )
 
-    @server.tool(description="List dataset community report jobs.")
-    async def ogm_list_community_report_jobs(dataset_id: str) -> dict[str, Any]:
-        try:
-            async with OGMClient(resolved_settings) as client:
-                return await list_community_report_jobs(
-                    client, _defined(dataset_id=dataset_id)
-                )
-        except Exception as error:
-            return _tool_error(error)
-
-    @server.tool(description="Search stored memory facts lexically.")
-    async def ogm_search_memory(
-        query: str,
-        user_id: str | None = None,
-        agent_id: str | None = None,
-        session_id: str | None = None,
-        scopes: list[Literal["user", "agent", "session"]] | None = None,
-        limit: int | None = None,
-        include_superseded: bool | None = None,
-    ) -> dict[str, Any]:
-        try:
-            arguments = _defined(
-                query=query,
-                user_id=user_id,
-                agent_id=agent_id,
-                session_id=session_id,
-                scopes=scopes,
-                limit=limit,
-                include_superseded=include_superseded,
-            )
-            async with OGMClient(resolved_settings) as client:
-                return await run_memory_search(client, arguments)
-        except Exception as error:
-            return _tool_error(error)
-
-    @server.tool(
-        description="Provision stable user and agent identities then create session."
-    )
-    async def ogm_create_session(
-        user_external_id: str,
-        agent_name: str,
-        user_display_name: str | None = None,
-        agent_description: str | None = None,
-        title: str | None = None,
-        user_metadata: dict[str, Any] | None = None,
-        agent_metadata: dict[str, Any] | None = None,
-        session_metadata: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        try:
-            from ogm_agent_bridge.state import StateStore
-            from ogm_agent_bridge.write_tools import create_session
-
-            state = StateStore(resolved_settings.state_db, resolved_settings.project_id)
-            try:
-                async with OGMClient(resolved_settings) as client:
-                    return await create_session(
-                        client,
-                        state,
-                        resolved_settings.permission_profile,
-                        _defined(
-                            user_external_id=user_external_id,
-                            agent_name=agent_name,
-                            user_display_name=user_display_name,
-                            agent_description=agent_description,
-                            title=title,
-                            user_metadata=user_metadata,
-                            agent_metadata=agent_metadata,
-                            session_metadata=session_metadata,
-                        ),
-                    )
-            finally:
-                state.close()
-        except Exception as error:
-            return _tool_error(error)
-
-    @server.tool(description="Store one message and one fact in mapped active session.")
-    async def ogm_remember(
-        session_id: str,
-        message: dict[str, Any],
-        fact: dict[str, Any],
-    ) -> dict[str, Any]:
-        try:
-            from ogm_agent_bridge.state import StateStore
-            from ogm_agent_bridge.write_tools import remember
-
-            state = StateStore(resolved_settings.state_db, resolved_settings.project_id)
-            try:
-                async with OGMClient(resolved_settings) as client:
-                    return await remember(
-                        client,
-                        state,
-                        resolved_settings.permission_profile,
-                        {"session_id": session_id, "message": message, "fact": fact},
-                    )
-            finally:
-                state.close()
-        except Exception as error:
-            return _tool_error(error)
-
-    @server.tool(description="Upload regular local file as multipart document.")
+    @server.tool(description="Upload regular local file to configured project dataset.")
     async def ogm_upload_document(
         dataset_id: str,
         path: str,
@@ -269,13 +160,23 @@ def create_server(settings: Settings | None = None) -> FastMCP:
     return server
 
 
+async def _call(
+    settings: Settings,
+    handler: Callable[..., Awaitable[dict[str, Any]]],
+    *arguments: Any,
+) -> dict[str, Any]:
+    try:
+        async with OGMClient(settings) as client:
+            return await handler(client, *arguments)
+    except Exception as error:
+        return _tool_error(error)
+
+
 def _defined(**values: Any) -> dict[str, Any]:
-    """Drop unset optional MCP arguments before core payload validation."""
     return {name: value for name, value in values.items() if value is not None}
 
 
 def _tool_error(error: Exception) -> dict[str, Any]:
-    """Return public errors only; do not catch BaseException."""
     if isinstance(error, BridgeError):
         return safe_error(error)
     print("ogm-agent-bridge: internal tool failure", file=sys.stderr)
@@ -283,7 +184,6 @@ def _tool_error(error: Exception) -> dict[str, Any]:
 
 
 def main() -> None:
-    """Run MCP stdio server."""
     if "--version" in sys.argv[1:]:
         print(__version__)
         return

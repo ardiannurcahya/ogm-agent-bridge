@@ -22,7 +22,6 @@ class Settings:
     project_id: str
     timeout_seconds: float = 30.0
     max_retries: int = 2
-    state_db: Path = Path("~/.local/state/ogm-agent-bridge/state.db")
     permission_profile: str = "personal-safe"
     upload_roots: tuple[Path, ...] = ()
 
@@ -50,9 +49,6 @@ def load_settings(
         project_id,
         _positive_float(environ, "OGM_TIMEOUT_SECONDS", 30.0),
         _nonnegative_int(environ, "OGM_MAX_RETRIES", 2),
-        Path(
-            environ.get("OGM_STATE_DB", "~/.local/state/ogm-agent-bridge/state.db")
-        ).expanduser(),
         profile,
         _upload_roots(environ),
     )

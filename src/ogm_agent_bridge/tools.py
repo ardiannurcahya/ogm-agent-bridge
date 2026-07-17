@@ -1,4 +1,4 @@
-"""B1 read-tool handlers and core input validation."""
+"""Graph-first read-tool handlers and core input validation."""
 
 from __future__ import annotations
 
@@ -10,157 +10,135 @@ from ogm_agent_bridge.errors import ValidationError
 from ogm_agent_bridge.permissions import require_read
 from ogm_agent_bridge.responses import envelope
 
-_MODES = frozenset(
-    {"vector_only", "graph_only", "graph_local", "graph_global", "hybrid"}
-)
-_FUSIONS = frozenset({"rrf", "weighted"})
-_SCOPES = frozenset({"user", "agent", "session"})
-
 
 async def list_datasets(client: OGMClient) -> dict[str, Any]:
-    """List datasets in configured project."""
     require_read("datasets:read")
     response = await client.request("GET", "/v1/datasets")
     return envelope(response.json(), provenance={"project_id": client.project_id})
 
 
-async def query(client: OGMClient, arguments: Mapping[str, Any]) -> dict[str, Any]:
-    """Run grounded retrieval and preserve core response exactly."""
-    require_read("query:read")
-    payload: dict[str, Any] = {
-        "dataset_id": _string(arguments, "dataset_id", 1),
-        "query": _string(arguments, "query", 1, 10_000),
-    }
-    _choice(arguments, payload, "mode", _MODES)
-    _integer(arguments, payload, "top_k", 1, 50)
-    _integer(arguments, payload, "graph_depth", 1, 2)
-    _integer(arguments, payload, "graph_fanout", 1, 100)
-    _integer(arguments, payload, "graph_timeout_ms", 1, 10_000)
-    _choice(arguments, payload, "fusion", _FUSIONS)
-    _optional_string(arguments, payload, "memory_user_id")
-    _optional_string(arguments, payload, "memory_agent_id")
-    _optional_string(arguments, payload, "memory_session_id")
-    _integer(arguments, payload, "memory_top_k", 0, 20)
-    _optional_boolean(arguments, payload, "include_communities")
-    _integer(arguments, payload, "community_level", 0, 2)
-    response = await client.request("POST", "/v1/query", json=payload, retry=False)
-    data = response.json()
-    provenance: dict[str, Any] = {
-        "project_id": client.project_id,
-        "dataset_id": payload["dataset_id"],
-    }
-    if isinstance(data, dict) and isinstance(data.get("retrieval_trace"), dict):
-        trace_id = data["retrieval_trace"].get("trace_id")
-        if isinstance(trace_id, str):
-            provenance["trace_id"] = trace_id
-    return envelope(data, provenance=provenance)
-
-
-async def graph_explorer(
+async def search_entities(
     client: OGMClient, arguments: Mapping[str, Any]
 ) -> dict[str, Any]:
-    """Read dataset graph explorer response unchanged."""
-    require_read("graph:read")
     dataset_id = _string(arguments, "dataset_id", 1)
+    params = {"q": _string(arguments, "q", 1, 200)}
+    _optional_string(arguments, params, "entity_type", 100)
+    _integer(arguments, params, "limit", 1, 100)
+    return await _get(
+        client, f"/v1/datasets/{dataset_id}/entities/search", params, dataset_id
+    )
+
+
+async def get_entity(client: OGMClient, entity_id: str) -> dict[str, Any]:
+    return await _get(
+        client, f"/v1/entities/{_value(entity_id, 'entity_id', 1)}", {}, None, entity_id
+    )
+
+
+async def get_neighbors(
+    client: OGMClient, arguments: Mapping[str, Any]
+) -> dict[str, Any]:
+    entity_id = _string(arguments, "entity_id", 1)
     params: dict[str, Any] = {}
-    _integer(arguments, params, "node_limit", 1, 200)
+    _integer(arguments, params, "limit", 1, 100)
+    return await _get(
+        client, f"/v1/entities/{entity_id}/neighbors", params, None, entity_id
+    )
+
+
+async def find_path(client: OGMClient, arguments: Mapping[str, Any]) -> dict[str, Any]:
+    dataset_id = _string(arguments, "dataset_id", 1)
+    params = {
+        "source_entity_id": _string(arguments, "source_entity_id", 1),
+        "target_entity_id": _string(arguments, "target_entity_id", 1),
+    }
+    _integer(arguments, params, "max_depth", 1, 4)
     _integer(arguments, params, "relation_limit", 1, 200)
-    _integer(arguments, params, "community_level", 0, 2)
-    response = await client.request(
-        "GET", f"/v1/datasets/{dataset_id}/graph/explorer", params=params
-    )
-    return envelope(
-        response.json(),
-        provenance={"project_id": client.project_id, "dataset_id": dataset_id},
+    return await _get(
+        client, f"/v1/datasets/{dataset_id}/graph/path", params, dataset_id
     )
 
 
-async def list_community_reports(
+async def get_subgraph(
     client: OGMClient, arguments: Mapping[str, Any]
 ) -> dict[str, Any]:
-    """List dataset community reports unchanged."""
-    require_read("graph:read")
+    dataset_id = _string(arguments, "dataset_id", 1)
+    params = {"entity_id": _string(arguments, "entity_id", 1)}
+    _integer(arguments, params, "depth", 0, 2)
+    _integer(arguments, params, "node_limit", 1, 200)
+    _integer(arguments, params, "relation_limit", 1, 400)
+    return await _get(
+        client, f"/v1/datasets/{dataset_id}/graph/subgraph", params, dataset_id
+    )
+
+
+async def get_graph(client: OGMClient, arguments: Mapping[str, Any]) -> dict[str, Any]:
     dataset_id = _string(arguments, "dataset_id", 1)
     params: dict[str, Any] = {}
-    _integer(arguments, params, "community_level", 0, 2)
-    response = await client.request(
-        "GET", f"/v1/datasets/{dataset_id}/community-reports", params=params
-    )
-    return envelope(
-        response.json(),
-        provenance={"project_id": client.project_id, "dataset_id": dataset_id},
+    _integer(arguments, params, "limit", 1, 200)
+    _integer(arguments, params, "depth", 0, 1)
+    return await _get(client, f"/v1/datasets/{dataset_id}/graph", params, dataset_id)
+
+
+async def get_evidence(client: OGMClient, evidence_id: str) -> dict[str, Any]:
+    return await _get(
+        client,
+        f"/v1/evidence/{_value(evidence_id, 'evidence_id', 1)}",
+        {},
+        None,
+        None,
+        evidence_id,
     )
 
 
-async def get_community_report(
+async def get_relation_evidence(
     client: OGMClient, arguments: Mapping[str, Any]
 ) -> dict[str, Any]:
-    """Get community report unchanged."""
-    require_read("graph:read")
     dataset_id = _string(arguments, "dataset_id", 1)
-    report_id = _string(arguments, "report_id", 1)
-    response = await client.request(
-        "GET", f"/v1/datasets/{dataset_id}/community-reports/{report_id}"
-    )
-    return envelope(
-        response.json(),
-        provenance={
-            "project_id": client.project_id,
-            "dataset_id": dataset_id,
-            "report_id": report_id,
-        },
+    relation_id = _string(arguments, "relation_id", 1)
+    params: dict[str, Any] = {}
+    _integer(arguments, params, "limit", 1, 100)
+    return await _get(
+        client,
+        f"/v1/datasets/{dataset_id}/relations/{relation_id}/evidence",
+        params,
+        dataset_id,
+        None,
+        None,
+        relation_id,
     )
 
 
-async def list_community_report_jobs(
-    client: OGMClient, arguments: Mapping[str, Any]
+async def _get(
+    client: OGMClient,
+    path: str,
+    params: Mapping[str, Any],
+    dataset_id: str | None,
+    entity_id: str | None = None,
+    evidence_id: str | None = None,
+    relation_id: str | None = None,
 ) -> dict[str, Any]:
-    """List dataset community report jobs unchanged."""
     require_read("graph:read")
-    dataset_id = _string(arguments, "dataset_id", 1)
-    response = await client.request(
-        "GET", f"/v1/datasets/{dataset_id}/community-report-jobs"
-    )
-    return envelope(
-        response.json(),
-        provenance={"project_id": client.project_id, "dataset_id": dataset_id},
-    )
-
-
-async def search_memory(
-    client: OGMClient, arguments: Mapping[str, Any]
-) -> dict[str, Any]:
-    """Search memory facts with lexical-search warning."""
-    require_read("memory:read")
-    payload: dict[str, Any] = {"query": _string(arguments, "query", 1, 5_000)}
-    _optional_string(arguments, payload, "user_id")
-    _optional_string(arguments, payload, "agent_id")
-    _optional_string(arguments, payload, "session_id")
-    _integer(arguments, payload, "limit", 1, 50)
-    if "include_superseded" in arguments:
-        value = arguments["include_superseded"]
-        if type(value) is not bool:
-            raise ValidationError("include_superseded must be a boolean")
-        payload["include_superseded"] = value
-    if "scopes" in arguments:
-        scopes = arguments["scopes"]
-        if not isinstance(scopes, list) or not all(
-            type(scope) is str and scope in _SCOPES for scope in scopes
-        ):
-            raise ValidationError("scopes must contain user, agent, or session")
-        payload["scopes"] = scopes
-    response = await client.request("POST", "/v1/memory/search", json=payload)
-    return envelope(
-        response.json(),
-        provenance={"project_id": client.project_id},
-        warnings=["Memory search is lexical, not semantic retrieval."],
-    )
+    response = await client.request("GET", path, params=params or None)
+    provenance: dict[str, str] = {"project_id": client.project_id}
+    for key, value in (
+        ("dataset_id", dataset_id),
+        ("entity_id", entity_id),
+        ("evidence_id", evidence_id),
+        ("relation_id", relation_id),
+    ):
+        if value is not None:
+            provenance[key] = value
+    return envelope(response.json(), provenance=provenance)
 
 
 def _string(
     arguments: Mapping[str, Any], name: str, minimum: int, maximum: int | None = None
 ) -> str:
-    value = arguments.get(name)
+    return _value(arguments.get(name), name, minimum, maximum)
+
+
+def _value(value: object, name: str, minimum: int, maximum: int | None = None) -> str:
     if (
         type(value) is not str
         or len(value) < minimum
@@ -172,7 +150,7 @@ def _string(
 
 def _integer(
     arguments: Mapping[str, Any],
-    payload: dict[str, Any],
+    target: dict[str, Any],
     name: str,
     minimum: int,
     maximum: int,
@@ -182,40 +160,11 @@ def _integer(
     value = arguments[name]
     if type(value) is not int or not minimum <= value <= maximum:
         raise ValidationError(f"{name} must be an integer from {minimum} to {maximum}")
-    payload[name] = value
+    target[name] = value
 
 
 def _optional_string(
-    arguments: Mapping[str, Any], payload: dict[str, Any], name: str
+    arguments: Mapping[str, Any], target: dict[str, Any], name: str, maximum: int
 ) -> None:
-    if name not in arguments:
-        return
-    value = arguments[name]
-    if type(value) is not str or not value:
-        raise ValidationError(f"{name} must be a non-empty string")
-    payload[name] = value
-
-
-def _optional_boolean(
-    arguments: Mapping[str, Any], payload: dict[str, Any], name: str
-) -> None:
-    if name not in arguments:
-        return
-    value = arguments[name]
-    if type(value) is not bool:
-        raise ValidationError(f"{name} must be a boolean")
-    payload[name] = value
-
-
-def _choice(
-    arguments: Mapping[str, Any],
-    payload: dict[str, Any],
-    name: str,
-    choices: frozenset[str],
-) -> None:
-    if name not in arguments:
-        return
-    value = arguments[name]
-    if type(value) is not str or value not in choices:
-        raise ValidationError(f"{name} is invalid")
-    payload[name] = value
+    if name in arguments:
+        target[name] = _value(arguments[name], name, 1, maximum)

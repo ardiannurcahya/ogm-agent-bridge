@@ -10,7 +10,6 @@ mcp_servers:
       OGM_BASE_URL: "${OGM_BASE_URL}"
       OGM_API_KEY: "${OGM_API_KEY}"
       OGM_PROJECT_ID: "${OGM_PROJECT_ID}"
-      OGM_STATE_DB: "${OGM_STATE_DB}"
       OGM_PERMISSION_PROFILE: "${OGM_PERMISSION_PROFILE}"
     enabled: true
     timeout: 120
