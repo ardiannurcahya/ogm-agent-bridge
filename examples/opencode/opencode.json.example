@@ -4,10 +4,7 @@
     "ogm": {
       "type": "local",
       "command": [
-        "uv",
-        "run",
-        "--project",
-        "/absolute/path/ogm-agent-bridge",
+        "uvx",
         "ogm-agent-bridge"
       ],
       "environment": {

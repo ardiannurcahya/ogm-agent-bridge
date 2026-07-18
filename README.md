@@ -6,7 +6,7 @@ Bridge uses authenticated OpenGraphMemory REST APIs only. It is stateless: no lo
 
 ## Status
 
-Alpha. Source install is supported. PyPI publishing runs from GitHub Actions on `v*` tags.
+Alpha. PyPI releases are published from GitHub Actions on `v*` tags. Source install is also supported for development.
 
 ## Tools
 
@@ -24,16 +24,37 @@ Alpha. Source install is supported. PyPI publishing runs from GitHub Actions on 
 
 Read tools inspect PostgreSQL-authoritative graph data and evidence. `ogm_upload_document` is only write tool. No delete, update, admin, project-create, relation-review, analytics-refresh, memory, or semantic-retrieval tools exist.
 
-## Setup
+## Install
+
+Install from PyPI with `uv`:
+
+```bash
+uv tool install ogm-agent-bridge
+```
+
+Or run without installing:
+
+```bash
+uvx ogm-agent-bridge --version
+```
+
+`pipx` also works:
+
+```bash
+pipx install ogm-agent-bridge
+```
+
+For source development:
 
 ```bash
 git clone https://github.com/ardiannurcahya/ogm-agent-bridge.git "$HOME/src/ogm-agent-bridge"
 cd "$HOME/src/ogm-agent-bridge"
 uv sync --locked
-cp .env.example .env
 ```
 
-Required configuration:
+## Configure
+
+Set these environment variables before starting your MCP client:
 
 ```env
 OGM_BASE_URL=http://localhost:8000
@@ -42,23 +63,124 @@ OGM_PROJECT_ID=<project-uuid>
 OGM_PERMISSION_PROFILE=read-only
 ```
 
-Start server with `uv run ogm-agent-bridge`. MCP uses stdio; diagnostics use stderr.
+Use `OGM_PERMISSION_PROFILE=read-only` for graph search only. Use `OGM_PERMISSION_PROFILE=personal-safe` only when reviewed document uploads are needed.
 
-## Agent Workflow
+Optional upload roots:
 
-1. Call `ogm_health`.
-2. Call `ogm_list_datasets`.
-3. Call `ogm_search_entities` with selected dataset and term.
-4. Use `ogm_get_neighbors`, `ogm_get_subgraph`, or `ogm_find_path` to inspect relationships.
-5. Call `ogm_get_relation_evidence` or `ogm_get_evidence` before making evidence-backed claim.
+```env
+OGM_UPLOAD_ROOTS=/absolute/path/to/allowed/docs
+```
 
-Example `ogm_search_entities` arguments:
+More options: [Configuration](docs/configuration.md).
+
+## MCP Client Setup
+
+### Claude Code
+
+Add MCP server config to project `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "ogm": {
+      "command": "uvx",
+      "args": ["ogm-agent-bridge"],
+      "env": {
+        "OGM_BASE_URL": "${OGM_BASE_URL}",
+        "OGM_API_KEY": "${OGM_API_KEY}",
+        "OGM_PROJECT_ID": "${OGM_PROJECT_ID}",
+        "OGM_PERMISSION_PROFILE": "${OGM_PERMISSION_PROFILE}"
+      }
+    }
+  }
+}
+```
+
+Verify:
+
+```bash
+claude mcp list
+```
+
+### OpenCode
+
+Add MCP server config to `opencode.json` or `opencode.jsonc`:
+
+```json
+{
+  "mcp": {
+    "ogm": {
+      "type": "local",
+      "command": ["uvx", "ogm-agent-bridge"],
+      "environment": {
+        "OGM_BASE_URL": "{env:OGM_BASE_URL}",
+        "OGM_API_KEY": "{env:OGM_API_KEY}",
+        "OGM_PROJECT_ID": "{env:OGM_PROJECT_ID}",
+        "OGM_PERMISSION_PROFILE": "{env:OGM_PERMISSION_PROFILE}"
+      },
+      "enabled": true
+    }
+  }
+}
+```
+
+Restart OpenCode after editing config.
+
+### Hermes
+
+Add server under `mcp_servers`:
+
+```yaml
+mcp_servers:
+  ogm:
+    command: "uvx"
+    args:
+      - "ogm-agent-bridge"
+    env:
+      OGM_BASE_URL: "${OGM_BASE_URL}"
+      OGM_API_KEY: "${OGM_API_KEY}"
+      OGM_PROJECT_ID: "${OGM_PROJECT_ID}"
+      OGM_PERMISSION_PROFILE: "${OGM_PERMISSION_PROFILE}"
+    enabled: true
+```
+
+Verify:
+
+```bash
+hermes mcp test ogm
+```
+
+For source development, replace `uvx ogm-agent-bridge` with:
+
+```bash
+uv run --project /absolute/path/ogm-agent-bridge ogm-agent-bridge
+```
+
+MCP uses stdio. Diagnostics go to stderr.
+
+## Use
+
+After MCP server is connected, ask your agent to use OGM tools. Start with health and dataset discovery:
+
+```text
+Call ogm_health, then ogm_list_datasets.
+```
+
+Search entities in one dataset:
 
 ```json
 {"dataset_id":"dataset-id","q":"OpenGraphMemory","limit":10}
 ```
 
-## Harness Setup
+Inspect graph context with `ogm_get_entity`, `ogm_get_neighbors`, `ogm_get_subgraph`, `ogm_get_graph`, or `ogm_find_path`. Use `ogm_get_relation_evidence` or `ogm_get_evidence` before making evidence-backed claims.
+
+Upload documents only when profile is `personal-safe` and file path is under `OGM_UPLOAD_ROOTS`:
+
+```text
+Call ogm_upload_document with an approved local file path and dataset/project context.
+```
+
+## More Docs
 
 - [Claude Code](docs/claude-code.md)
 - [OpenCode](docs/opencode.md)

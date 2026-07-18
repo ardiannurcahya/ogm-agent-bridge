@@ -1,11 +1,8 @@
 {
   "mcpServers": {
     "ogm": {
-      "command": "uv",
+      "command": "uvx",
       "args": [
-        "run",
-        "--project",
-        "/absolute/path/ogm-agent-bridge",
         "ogm-agent-bridge"
       ],
       "env": {
