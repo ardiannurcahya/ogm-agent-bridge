@@ -6,7 +6,7 @@ Bridge uses authenticated OpenGraphMemory REST APIs only. It is stateless: no lo
 
 ## Status
 
-Alpha. Source install is supported. Package is not published to PyPI.
+Alpha. Source install is supported. PyPI publishing runs from GitHub Actions on `v*` tags.
 
 ## Tools
 
