@@ -2,6 +2,12 @@
 
 All notable changes follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.6] - 2026-07-18
+
+### Fixed
+
+- Install the pinned PyPI publisher inside the isolated publish job.
+
 ## [0.1.5] - 2026-07-18
 
 ### Changed
