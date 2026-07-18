@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ogm-agent-bridge"
-version = "0.1.4"
+version = "0.1.5"
 description = "MCP bridge for OpenGraphMemory"
 readme = "README.md"
 requires-python = ">=3.11"

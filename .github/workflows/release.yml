@@ -57,11 +57,11 @@ jobs:
           path: dist
       - name: Remove non-package files
         run: rm -f dist/SHA256SUMS
-      # v1.9.0
-      - uses: pypa/gh-action-pypi-publish@ec4db0b4ddc65acdf4bff5fa45ac92d78b56bdf0
-        with:
-          packages-dir: dist/
-          password: ${{ secrets.PYPI_API_TOKEN }}
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: uvx twine==6.1.0 upload dist/*.whl dist/*.tar.gz
 
   github-release:
     needs: [build, pypi]
