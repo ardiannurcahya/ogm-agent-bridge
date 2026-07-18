@@ -2,7 +2,7 @@
 
 All notable changes follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [0.1.2] - 2026-07-18
+## [0.1.3] - 2026-07-18
 
 ### Changed
 
@@ -11,6 +11,7 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/en/1.1.
 ### Fixed
 
 - Exclude `SHA256SUMS` from PyPI publish input.
+- Align harness example tests with PyPI `uvx` examples.
 
 ## [0.1.0] - 2026-07-18
 

@@ -32,13 +32,8 @@ def test_claude_example_is_valid_and_complete() -> None:
     example = _json_example("examples/claude-code/.mcp.json.example")
     server = example["mcpServers"]["ogm"]
 
-    assert server["command"] == "uv"
-    assert server["args"] == [
-        "run",
-        "--project",
-        "/absolute/path/ogm-agent-bridge",
-        "ogm-agent-bridge",
-    ]
+    assert server["command"] == "uvx"
+    assert server["args"] == ["ogm-agent-bridge"]
     assert set(server["env"]) == REQUIRED_ENV
     assert set(server["env"].values()) == {f"${{{name}}}" for name in REQUIRED_ENV}
 
@@ -49,13 +44,7 @@ def test_opencode_example_is_valid_and_complete() -> None:
 
     assert example["$schema"] == "https://opencode.ai/config.json"
     assert server["type"] == "local"
-    assert server["command"][:4] == [
-        "uv",
-        "run",
-        "--project",
-        "/absolute/path/ogm-agent-bridge",
-    ]
-    assert server["command"][-1] == "ogm-agent-bridge"
+    assert server["command"] == ["uvx", "ogm-agent-bridge"]
     assert server["enabled"] is True
     assert set(server["environment"]) == REQUIRED_ENV
     assert set(server["environment"].values()) == {
@@ -67,13 +56,8 @@ def test_hermes_example_declares_explicit_bridge_environment() -> None:
     example = _simple_yaml(_text("examples/hermes/config.yaml.example"))
     server = example["mcp_servers"]["ogm"]
 
-    assert server["command"] == "uv"
-    assert server["args"] == [
-        "run",
-        "--project",
-        "/absolute/path/ogm-agent-bridge",
-        "ogm-agent-bridge",
-    ]
+    assert server["command"] == "uvx"
+    assert server["args"] == ["ogm-agent-bridge"]
     assert server["env"] == {name: f"${{{name}}}" for name in REQUIRED_ENV}
     assert server["timeout"] == 120
     assert server["connect_timeout"] == 60
