@@ -66,7 +66,9 @@ async def test_retry_and_no_retry_counts(settings: Settings) -> None:
     async def handler(request: httpx.Request) -> httpx.Response:
         nonlocal calls
         calls += 1
-        return httpx.Response(503 if calls < 3 else 200)
+        if calls < 3:
+            return httpx.Response(503)
+        return httpx.Response(200, json={"ok": True})
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
         assert (

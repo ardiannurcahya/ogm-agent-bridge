@@ -3,7 +3,7 @@ import pytest
 
 from ogm_agent_bridge.client import OGMClient
 from ogm_agent_bridge.config import Settings
-from ogm_agent_bridge.errors import AuthenticationError, TimeoutError
+from ogm_agent_bridge.errors import AuthenticationError, TimeoutError, UpstreamError
 
 
 @pytest.fixture
@@ -27,13 +27,39 @@ async def test_sends_project_auth_headers(settings: Settings) -> None:
 
 
 @pytest.mark.asyncio
+async def test_preserves_base_url_path_prefix() -> None:
+    settings = Settings("https://core.example.test/api", "api-key", "project-id")
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/api/v1/health"
+        return httpx.Response(200, json={"ok": True})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        response = await OGMClient(settings, http_client).request("GET", "/v1/health")
+
+    assert response.json() == {"ok": True}
+
+
+@pytest.mark.asyncio
+async def test_rejects_successful_non_json_response(settings: Settings) -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text="<html>frontend</html>")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        with pytest.raises(UpstreamError, match="non-JSON response"):
+            await OGMClient(settings, http_client).request("GET", "/v1/health")
+
+
+@pytest.mark.asyncio
 async def test_retries_retryable_status(settings: Settings) -> None:
     calls = 0
 
     async def handler(request: httpx.Request) -> httpx.Response:
         nonlocal calls
         calls += 1
-        return httpx.Response(503 if calls == 1 else 200)
+        if calls == 1:
+            return httpx.Response(503)
+        return httpx.Response(200, json={"ok": True})
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
         response = await OGMClient(settings, http_client).request("GET", "/v1/health")

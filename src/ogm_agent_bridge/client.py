@@ -12,6 +12,7 @@ from ogm_agent_bridge.errors import (
     AmbiguousWriteError,
     TimeoutError,
     TransportError,
+    UpstreamError,
     error_from_status,
 )
 
@@ -71,7 +72,7 @@ class OGMClient:
             try:
                 response = await self._client.request(
                     method,
-                    httpx.URL(self._settings.base_url).join(path),
+                    f"{self._settings.base_url.rstrip('/')}/{path.lstrip('/')}",
                     headers=headers,
                     json=json,
                     params=params,
@@ -95,6 +96,11 @@ class OGMClient:
                 if ambiguous_write and response.status_code in _RETRYABLE_STATUS_CODES:
                     raise AmbiguousWriteError(message)
                 raise error_from_status(response.status_code, message)
+            try:
+                response.json()
+            except ValueError as error:
+                await response.aclose()
+                raise UpstreamError("Core API returned a non-JSON response") from error
             return response
         raise AssertionError("retry loop must return or raise")
 
