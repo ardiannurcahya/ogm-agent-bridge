@@ -28,6 +28,16 @@ TOOLS = {
     "ogm_get_evidence",
     "ogm_get_relation_evidence",
     "ogm_upload_document",
+    "ogm_memory_list_episodes",
+    "ogm_memory_get_episode",
+    "ogm_memory_search",
+    "ogm_memory_create_episode",
+    "ogm_memory_append_attempt",
+    "ogm_memory_record_outcome",
+    "ogm_memory_feedback_episode",
+    "ogm_memory_supersede_episode",
+    "ogm_memory_feedback_pattern",
+    "ogm_memory_supersede_pattern",
 }
 ENV_DEFAULTS = {
     "OGM_TIMEOUT_SECONDS": "30",
@@ -76,4 +86,4 @@ def test_docs_are_stateless_graph_first() -> None:
     assert "ogm_search_entities" in text
     assert "OGM_STATE_DB" not in text
     assert "ogm_create_session" not in text
-    assert "ogm_remember" not in text
+    assert "automatic conversation ingestion" in text

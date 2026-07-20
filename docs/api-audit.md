@@ -13,5 +13,15 @@ Bridge targets current OpenGraphMemory structured graph REST contract.
 - `GET /v1/datasets/{dataset_id}/graph`
 - `GET /v1/evidence/{evidence_id}`
 - `GET /v1/datasets/{dataset_id}/relations/{relation_id}/evidence`
+- `POST /v1/agent-memory/episodes`
+- `GET /v1/agent-memory/episodes`
+- `GET /v1/agent-memory/episodes/{episode_id}`
+- `POST /v1/agent-memory/episodes/{episode_id}/attempts`
+- `POST /v1/agent-memory/episodes/{episode_id}/outcomes`
+- `GET /v1/agent-memory/search`
+- `POST /v1/agent-memory/episodes/{episode_id}/feedback`
+- `POST /v1/agent-memory/episodes/{episode_id}/supersede`
+- `POST /v1/agent-memory/patterns/{pattern_key}/feedback`
+- `POST /v1/agent-memory/patterns/{pattern_key}/supersede`
 
-Project requests require `X-API-Key` and `X-Project-Id`. Core scopes out-of-project resources as `404`. Bridge exposes no unsupported query, memory, session, mutation, or admin route.
+Project requests require `X-API-Key` and `X-Project-Id`. Core scopes out-of-project resources as `404`. Agent Memory writes disable HTTP retries because an upstream gateway failure can leave an ambiguous accepted write. Bridge exposes no unsupported session, destructive mutation, or admin route.

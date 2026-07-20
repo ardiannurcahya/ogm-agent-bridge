@@ -21,8 +21,18 @@ Alpha. PyPI releases are published from GitHub Actions on `v*` tags. Source inst
 - `ogm_get_evidence`
 - `ogm_get_relation_evidence`
 - `ogm_upload_document`
+- `ogm_memory_list_episodes`
+- `ogm_memory_get_episode`
+- `ogm_memory_search`
+- `ogm_memory_create_episode`
+- `ogm_memory_append_attempt`
+- `ogm_memory_record_outcome`
+- `ogm_memory_feedback_episode`
+- `ogm_memory_supersede_episode`
+- `ogm_memory_feedback_pattern`
+- `ogm_memory_supersede_pattern`
 
-Read tools inspect PostgreSQL-authoritative graph data and evidence. `ogm_upload_document` is only write tool. No delete, update, admin, project-create, relation-review, analytics-refresh, memory, or semantic-retrieval tools exist.
+Read tools inspect PostgreSQL-authoritative graph and Agent Memory data. Agent Memory results are historical claims: inspect recorded evidence and verifiers before relying on them. `personal-safe` permits reviewed document upload and additive Agent Memory records; `memory-curator` additionally permits memory feedback and supersession. No delete, admin, project-create, relation-review, analytics-refresh, semantic-retrieval, or automatic conversation-ingestion tools exist.
 
 ## Install
 
@@ -63,7 +73,7 @@ OGM_PROJECT_ID=<project-uuid>
 OGM_PERMISSION_PROFILE=read-only
 ```
 
-Use `OGM_PERMISSION_PROFILE=read-only` for graph search only. Use `OGM_PERMISSION_PROFILE=personal-safe` only when reviewed document uploads are needed.
+Use `OGM_PERMISSION_PROFILE=read-only` for graph and Agent Memory retrieval. Use `OGM_PERMISSION_PROFILE=personal-safe` for reviewed uploads and additive Agent Memory records. Use `memory-curator` only for reviewed feedback and supersession.
 
 Optional upload roots:
 
@@ -174,6 +184,8 @@ Search entities in one dataset:
 
 Inspect graph context with `ogm_get_entity`, `ogm_get_neighbors`, `ogm_get_subgraph`, `ogm_get_graph`, or `ogm_find_path`. Use `ogm_get_relation_evidence` or `ogm_get_evidence` before making evidence-backed claims.
 
+Retrieve relevant operational experience with `ogm_memory_search`. Create an episode, append attempts, and record a verified outcome only when profile is `personal-safe`. Feedback and supersession require `memory-curator`.
+
 Upload documents only when profile is `personal-safe` and file path is under `OGM_UPLOAD_ROOTS`:
 
 ```text
@@ -201,7 +213,7 @@ uv build
 
 ## Security
 
-Use project-scoped keys. Keep `.env` and keys outside upload roots. Start `read-only`; use `personal-safe` only for reviewed document uploads. See [security](docs/security.md).
+Use project-scoped keys. Keep `.env` and keys outside upload roots. Start `read-only`; use `personal-safe` only for reviewed writes; reserve `memory-curator` for memory governance. See [security](docs/security.md).
 
 ## License
 

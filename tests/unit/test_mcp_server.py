@@ -50,6 +50,16 @@ async def test_server_exposes_explicit_read_tool_schemas() -> None:
         "ogm_get_evidence",
         "ogm_get_relation_evidence",
         "ogm_upload_document",
+        "ogm_memory_list_episodes",
+        "ogm_memory_get_episode",
+        "ogm_memory_search",
+        "ogm_memory_create_episode",
+        "ogm_memory_append_attempt",
+        "ogm_memory_record_outcome",
+        "ogm_memory_feedback_episode",
+        "ogm_memory_supersede_episode",
+        "ogm_memory_feedback_pattern",
+        "ogm_memory_supersede_pattern",
     }
     assert tools["ogm_search_entities"]["required"] == ["dataset_id", "q"]
     assert tools["ogm_find_path"]["required"] == [
@@ -65,3 +75,15 @@ async def test_server_exposes_explicit_read_tool_schemas() -> None:
     upload = tools["ogm_upload_document"]
     assert upload["required"] == ["dataset_id", "path"]
     assert upload["properties"]["path"]["type"] == "string"
+    assert tools["ogm_memory_search"]["required"] == ["q"]
+    assert tools["ogm_memory_create_episode"]["required"] == [
+        "domain",
+        "title",
+        "goal",
+        "problem_signature",
+    ]
+    assert tools["ogm_memory_append_attempt"]["required"] == [
+        "episode_id",
+        "hypothesis",
+        "result",
+    ]

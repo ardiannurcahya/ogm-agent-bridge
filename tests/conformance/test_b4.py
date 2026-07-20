@@ -151,7 +151,7 @@ async def test_upload_root_symlink_mime_and_errors(
 async def test_mcp_graph_tool_schemas_and_safe_unexpected_error() -> None:
     server = create_server(Settings("https://core.test", "key", "project"))
     tools = await server.list_tools()
-    assert len(tools) == 11
+    assert len(tools) == 21
     assert all(tool.inputSchema.get("type") == "object" for tool in tools)
     result = _tool_error(RuntimeError("secret path /private/token"))
     assert result["ok"] is False

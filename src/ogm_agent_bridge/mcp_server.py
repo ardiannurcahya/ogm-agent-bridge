@@ -9,6 +9,22 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 
 from ogm_agent_bridge import __version__
+from ogm_agent_bridge.agent_memory_tools import (
+    append_attempt,
+    create_episode,
+    feedback_episode,
+    feedback_pattern,
+    list_episodes,
+    record_outcome,
+    supersede_episode,
+    supersede_pattern,
+)
+from ogm_agent_bridge.agent_memory_tools import (
+    get_episode as get_memory_episode,
+)
+from ogm_agent_bridge.agent_memory_tools import (
+    search as search_memory,
+)
 from ogm_agent_bridge.client import OGMClient
 from ogm_agent_bridge.config import Settings, load_settings
 from ogm_agent_bridge.errors import BridgeError
@@ -156,6 +172,171 @@ def create_server(settings: Settings | None = None) -> FastMCP:
                 )
         except Exception as error:
             return _tool_error(error)
+
+    @server.tool(description="List project-scoped Agent Memory episodes.")
+    async def ogm_memory_list_episodes(
+        status: str | None = None, limit: int | None = None
+    ) -> dict[str, Any]:
+        return await _call(
+            resolved_settings,
+            list_episodes,
+            _defined(status=status, limit=limit),
+        )
+
+    @server.tool(description="Read one project-scoped Agent Memory episode.")
+    async def ogm_memory_get_episode(episode_id: str) -> dict[str, Any]:
+        return await _call(resolved_settings, get_memory_episode, episode_id)
+
+    @server.tool(description="Search verified and historical Agent Memory episodes.")
+    async def ogm_memory_search(
+        q: str,
+        problem_signature: str | None = None,
+        repository: str | None = None,
+        environment: str | None = None,
+        include_inactive: bool | None = None,
+        limit: int | None = None,
+    ) -> dict[str, Any]:
+        return await _call(
+            resolved_settings,
+            search_memory,
+            _defined(
+                q=q,
+                problem_signature=problem_signature,
+                repository=repository,
+                environment=environment,
+                include_inactive=include_inactive,
+                limit=limit,
+            ),
+        )
+
+    @server.tool(description="Create a project-scoped Agent Memory episode.")
+    async def ogm_memory_create_episode(
+        domain: str,
+        title: str,
+        goal: str,
+        problem_signature: str,
+        scope: dict[str, Any] | None = None,
+        tags: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
+        evidence: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        return await _call(
+            resolved_settings,
+            create_episode,
+            resolved_settings.permission_profile,
+            _defined(
+                domain=domain,
+                title=title,
+                goal=goal,
+                problem_signature=problem_signature,
+                scope=scope,
+                tags=tags,
+                metadata=metadata,
+                evidence=evidence,
+            ),
+        )
+
+    @server.tool(description="Append a bounded attempt to an Agent Memory episode.")
+    async def ogm_memory_append_attempt(
+        episode_id: str,
+        hypothesis: str,
+        result: str,
+        actions: list[Any] | None = None,
+        notes: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        return await _call(
+            resolved_settings,
+            append_attempt,
+            resolved_settings.permission_profile,
+            episode_id,
+            _defined(
+                hypothesis=hypothesis,
+                result=result,
+                actions=actions,
+                notes=notes,
+                metadata=metadata,
+            ),
+        )
+
+    @server.tool(description="Record a final Agent Memory outcome with verifiers.")
+    async def ogm_memory_record_outcome(
+        episode_id: str,
+        status: str,
+        summary: str,
+        lesson: str | None = None,
+        verifiers: list[dict[str, Any]] | None = None,
+        metrics: dict[str, Any] | None = None,
+        pattern_key: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        return await _call(
+            resolved_settings,
+            record_outcome,
+            resolved_settings.permission_profile,
+            episode_id,
+            _defined(
+                status=status,
+                summary=summary,
+                lesson=lesson,
+                verifiers=verifiers,
+                metrics=metrics,
+                pattern_key=pattern_key,
+                metadata=metadata,
+            ),
+        )
+
+    @server.tool(description="Curate confidence feedback for an Agent Memory episode.")
+    async def ogm_memory_feedback_episode(
+        episode_id: str, score: int
+    ) -> dict[str, Any]:
+        return await _call(
+            resolved_settings,
+            feedback_episode,
+            resolved_settings.permission_profile,
+            episode_id,
+            score,
+        )
+
+    @server.tool(
+        description="Mark an Agent Memory episode superseded by another episode."
+    )
+    async def ogm_memory_supersede_episode(
+        episode_id: str, superseding_episode_id: str
+    ) -> dict[str, Any]:
+        return await _call(
+            resolved_settings,
+            supersede_episode,
+            resolved_settings.permission_profile,
+            episode_id,
+            superseding_episode_id,
+        )
+
+    @server.tool(description="Curate confidence feedback for an Agent Memory pattern.")
+    async def ogm_memory_feedback_pattern(
+        pattern_key: str, score: int
+    ) -> dict[str, Any]:
+        return await _call(
+            resolved_settings,
+            feedback_pattern,
+            resolved_settings.permission_profile,
+            pattern_key,
+            score,
+        )
+
+    @server.tool(
+        description="Mark an Agent Memory pattern superseded by another pattern."
+    )
+    async def ogm_memory_supersede_pattern(
+        pattern_key: str, superseding_pattern_key: str
+    ) -> dict[str, Any]:
+        return await _call(
+            resolved_settings,
+            supersede_pattern,
+            resolved_settings.permission_profile,
+            pattern_key,
+            superseding_pattern_key,
+        )
 
     return server
 

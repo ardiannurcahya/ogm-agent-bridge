@@ -81,20 +81,30 @@ class OGMClient:
                 )
             except httpx.TimeoutException as error:
                 if attempt == retries:
+                    if ambiguous_write:
+                        raise AmbiguousWriteError(
+                            "Core API write may have succeeded"
+                        ) from error
                     raise TimeoutError("Core API request timed out") from error
                 continue
             except httpx.RequestError as error:
                 if attempt == retries:
+                    if ambiguous_write:
+                        raise AmbiguousWriteError(
+                            "Core API write may have succeeded"
+                        ) from error
                     raise TransportError("Core API transport failed") from error
                 continue
+            if response.status_code in _RETRYABLE_STATUS_CODES and ambiguous_write:
+                message = _message(response)
+                await response.aclose()
+                raise AmbiguousWriteError(message)
             if response.status_code in _RETRYABLE_STATUS_CODES and attempt < retries:
                 await response.aclose()
                 continue
             if response.is_error:
                 message = _message(response)
                 await response.aclose()
-                if ambiguous_write and response.status_code in _RETRYABLE_STATUS_CODES:
-                    raise AmbiguousWriteError(message)
                 raise error_from_status(response.status_code, message)
             try:
                 response.json()

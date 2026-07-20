@@ -41,8 +41,10 @@ def load_settings(
     except ValueError as error:
         raise ConfigError("OGM_PROJECT_ID must be a UUID") from error
     profile = environ.get("OGM_PERMISSION_PROFILE", "personal-safe")
-    if profile not in {"read-only", "personal-safe"}:
-        raise ConfigError("OGM_PERMISSION_PROFILE must be read-only or personal-safe")
+    if profile not in {"read-only", "personal-safe", "memory-curator"}:
+        raise ConfigError(
+            "OGM_PERMISSION_PROFILE must be read-only, personal-safe, or memory-curator"
+        )
     return Settings(
         base_url,
         api_key,

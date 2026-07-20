@@ -25,6 +25,16 @@ EXPECTED_TOOLS = {
     "ogm_get_evidence",
     "ogm_get_relation_evidence",
     "ogm_upload_document",
+    "ogm_memory_list_episodes",
+    "ogm_memory_get_episode",
+    "ogm_memory_search",
+    "ogm_memory_create_episode",
+    "ogm_memory_append_attempt",
+    "ogm_memory_record_outcome",
+    "ogm_memory_feedback_episode",
+    "ogm_memory_supersede_episode",
+    "ogm_memory_feedback_pattern",
+    "ogm_memory_supersede_pattern",
 }
 
 
@@ -68,7 +78,7 @@ def test_harness_docs_state_tool_expectation_and_safe_setup() -> None:
         content = _text(path)
         assert "/absolute/path/ogm-agent-bridge" in content
         assert "OGM_PERMISSION_PROFILE" in content
-        assert "11 tools" in content
+        assert "21 tools" in content
         assert "read-only" in content
         for tool in EXPECTED_TOOLS:
             assert tool in content
