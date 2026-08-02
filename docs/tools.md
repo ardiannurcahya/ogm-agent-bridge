@@ -64,12 +64,12 @@ Twenty-one tools. Project calls use configured project and return `{ok,data,prov
 
 ## `ogm_upload_document`
 
-Multipart `POST /v1/datasets/{dataset_id}/documents`. Only `personal-safe` permits upload.
+Multipart `POST /v1/datasets/{dataset_id}/documents`. Only `personal-safe` permits upload, and `OGM_UPLOAD_ROOTS` must be configured.
 
 | Argument | Rule |
 |---|---|
 | `dataset_id` | Required UUID. |
-| `path` | Required regular local file under `OGM_UPLOAD_ROOTS`. |
+| `path` | Required regular local file under configured `OGM_UPLOAD_ROOTS`. |
 | `filename`, `mime_type` | Optional non-empty strings. |
 
 Upload crosses local trust boundary. Review path and content first. See [security](security.md).

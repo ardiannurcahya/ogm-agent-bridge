@@ -1,6 +1,6 @@
 # OpenCode Setup
 
-Install from PyPI with `uv tool install ogm-agent-bridge`, or run directly with `uvx ogm-agent-bridge`.
+Install from PyPI with `uv tool install ogm-agent-bridge`, or run directly with `uvx ogm-agent-bridge==0.1.7`.
 
 Merge `examples/opencode/opencode.json.example` into trusted OpenCode config. Default example uses `uvx` and PyPI. For source development, replace command with `uv run --project /absolute/path/ogm-agent-bridge ogm-agent-bridge`.
 

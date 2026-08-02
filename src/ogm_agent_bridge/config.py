@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import os
 import uuid
 from collections.abc import Mapping
@@ -22,8 +23,25 @@ class Settings:
     project_id: str
     timeout_seconds: float = 30.0
     max_retries: int = 2
-    permission_profile: str = "personal-safe"
+    permission_profile: str = "read-only"
     upload_roots: tuple[Path, ...] = ()
+
+    def __post_init__(self) -> None:
+        """Keep direct Settings construction as strict as environment loading."""
+        if (
+            not math.isfinite(self.timeout_seconds)
+            or not 0 < self.timeout_seconds <= _MAX_TIMEOUT_SECONDS
+        ):
+            raise ConfigError("timeout_seconds must be finite, positive, and bounded")
+        if (
+            type(self.max_retries) is not int
+            or not 0 <= self.max_retries <= _MAX_RETRIES
+        ):
+            raise ConfigError("max_retries must be a bounded non-negative integer")
+
+
+_MAX_TIMEOUT_SECONDS = 120.0
+_MAX_RETRIES = 5
 
 
 def load_settings(
@@ -40,7 +58,7 @@ def load_settings(
         uuid.UUID(project_id)
     except ValueError as error:
         raise ConfigError("OGM_PROJECT_ID must be a UUID") from error
-    profile = environ.get("OGM_PERMISSION_PROFILE", "personal-safe")
+    profile = environ.get("OGM_PERMISSION_PROFILE", "read-only")
     if profile not in {"read-only", "personal-safe", "memory-curator"}:
         raise ConfigError(
             "OGM_PERMISSION_PROFILE must be read-only, personal-safe, or memory-curator"
@@ -71,14 +89,20 @@ def _positive_float(environ: Mapping[str, str], name: str, default: float) -> fl
         value = float(raw)
     except ValueError as error:
         raise ConfigError(f"{name} must be a number") from error
+    if not math.isfinite(value):
+        raise ConfigError(f"{name} must be finite")
     if value <= 0:
         raise ConfigError(f"{name} must be positive")
+    if value > _MAX_TIMEOUT_SECONDS:
+        raise ConfigError(f"{name} must not exceed {_MAX_TIMEOUT_SECONDS:g}")
     return value
 
 
 def _upload_roots(environ: Mapping[str, str]) -> tuple[Path, ...]:
     raw = environ.get("OGM_UPLOAD_ROOTS")
-    roots = raw.split(os.pathsep) if raw else [os.getcwd()]
+    if raw is None:
+        return ()
+    roots = raw.split(os.pathsep)
     if not all(roots):
         raise ConfigError("OGM_UPLOAD_ROOTS must not contain empty paths")
     return tuple(Path(root).expanduser().resolve() for root in roots)
@@ -94,4 +118,6 @@ def _nonnegative_int(environ: Mapping[str, str], name: str, default: int) -> int
         raise ConfigError(f"{name} must be an integer") from error
     if value < 0:
         raise ConfigError(f"{name} must be non-negative")
+    if value > _MAX_RETRIES:
+        raise ConfigError(f"{name} must not exceed {_MAX_RETRIES}")
     return value

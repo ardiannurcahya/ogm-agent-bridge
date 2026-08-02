@@ -1,6 +1,6 @@
 # Claude Code Setup
 
-Install from PyPI with `uv tool install ogm-agent-bridge`, or run directly with `uvx ogm-agent-bridge`.
+Install from PyPI with `uv tool install ogm-agent-bridge`, or run directly with `uvx ogm-agent-bridge==0.1.7`.
 
 Copy `examples/claude-code/.mcp.json.example` to trusted project `.mcp.json`. Default example uses `uvx` and PyPI. For source development, replace command and args with `uv run --project /absolute/path/ogm-agent-bridge ogm-agent-bridge`.
 

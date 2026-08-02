@@ -6,7 +6,7 @@ import json
 import math
 import re
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, TypeGuard
 
 from ogm_agent_bridge.client import OGMClient
 from ogm_agent_bridge.errors import ValidationError
@@ -20,6 +20,7 @@ _EPISODE_STATUSES = frozenset({"open", "active", "degraded", "superseded", "reje
 _VERIFIER_KINDS = frozenset({"ci", "runtime", "test", "build", "self_report", "custom"})
 _EPISODE_ID = re.compile(r"mem_[0-9a-f-]{36}\Z")
 _PATTERN_KEY = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*\Z")
+_ROUTE_DELIMITERS = frozenset({"/", "\\", "?", "#", "%", "&"})
 _SEARCH_WARNING = (
     "Agent-memory results are historical claims; inspect recorded verifiers and evidence "
     "before relying on them."
@@ -30,6 +31,7 @@ async def list_episodes(
     client: OGMClient, arguments: Mapping[str, Any]
 ) -> dict[str, Any]:
     require_memory_read()
+    _arguments(arguments, {"status", "limit"})
     params: dict[str, Any] = {}
     _optional_enum(arguments, params, "status", _EPISODE_STATUSES)
     _optional_integer(arguments, params, "limit", 1, 100)
@@ -51,6 +53,17 @@ async def get_episode(client: OGMClient, episode_id: str) -> dict[str, Any]:
 
 async def search(client: OGMClient, arguments: Mapping[str, Any]) -> dict[str, Any]:
     require_memory_read()
+    _arguments(
+        arguments,
+        {
+            "q",
+            "problem_signature",
+            "repository",
+            "environment",
+            "include_inactive",
+            "limit",
+        },
+    )
     params = {"q": _string(arguments.get("q"), "q", 1, 512)}
     _optional_string(arguments, params, "problem_signature", 512)
     _optional_string(arguments, params, "repository", 255)
@@ -70,6 +83,19 @@ async def create_episode(
     client: OGMClient, profile: str, arguments: Mapping[str, Any]
 ) -> dict[str, Any]:
     require_memory_write(profile, "agent-memory:write")
+    _arguments(
+        arguments,
+        {
+            "domain",
+            "title",
+            "goal",
+            "problem_signature",
+            "scope",
+            "tags",
+            "metadata",
+            "evidence",
+        },
+    )
     body = {
         "domain": _enum(arguments.get("domain"), "domain", _DOMAINS),
         "title": _string(arguments.get("title"), "title", 1, 255),
@@ -91,6 +117,7 @@ async def append_attempt(
     client: OGMClient, profile: str, episode_id: str, arguments: Mapping[str, Any]
 ) -> dict[str, Any]:
     require_memory_write(profile, "agent-memory:write")
+    _arguments(arguments, {"hypothesis", "result", "actions", "notes", "metadata"})
     episode_id = _episode_id(episode_id)
     body = {
         "hypothesis": _string(arguments.get("hypothesis"), "hypothesis", 1, 10_000),
@@ -112,6 +139,18 @@ async def record_outcome(
     client: OGMClient, profile: str, episode_id: str, arguments: Mapping[str, Any]
 ) -> dict[str, Any]:
     require_memory_write(profile, "agent-memory:write")
+    _arguments(
+        arguments,
+        {
+            "status",
+            "summary",
+            "lesson",
+            "verifiers",
+            "metrics",
+            "pattern_key",
+            "metadata",
+        },
+    )
     episode_id = _episode_id(episode_id)
     pattern_key = arguments.get("pattern_key")
     body = {
@@ -247,19 +286,27 @@ def _enum(value: object, name: str, allowed: frozenset[str]) -> str:
 
 
 def _episode_id(value: object) -> str:
-    if type(value) is not str or not _EPISODE_ID.fullmatch(value):
+    if not _safe_route_selector(value) or not _EPISODE_ID.fullmatch(value):
         raise ValidationError("episode_id must be an Agent Memory ID")
     return value
 
 
 def _pattern_key(value: object) -> str:
     if (
-        type(value) is not str
+        not _safe_route_selector(value)
         or not 1 <= len(value) <= 255
         or not _PATTERN_KEY.fullmatch(value)
     ):
         raise ValidationError("pattern_key has invalid format")
     return value
+
+
+def _safe_route_selector(value: object) -> TypeGuard[str]:
+    """Reject delimiters before interpolating a selector into a URL path."""
+    return type(value) is str and not any(
+        ord(character) < 32 or ord(character) == 127 or character in _ROUTE_DELIMITERS
+        for character in value
+    )
 
 
 def _score(value: object) -> int:
@@ -403,3 +450,8 @@ def _json_value(value: object, name: str, depth: int = 0) -> None:
         raise ValidationError(f"{name} contains non-finite number")
     elif value is not None and type(value) not in {str, int, float, bool}:
         raise ValidationError(f"{name} must be JSON-compatible")
+
+
+def _arguments(arguments: Mapping[str, Any], allowed: set[str]) -> None:
+    if set(arguments) - allowed:
+        raise ValidationError("unknown argument")

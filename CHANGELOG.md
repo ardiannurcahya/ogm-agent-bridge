@@ -2,6 +2,14 @@
 
 All notable changes follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.7] - 2026-08-02
+
+### Fixed
+
+- Sanitize upstream failures, correctly classify audited HTTP statuses, and bound safe-request retries.
+- Reject invalid configuration values and malformed or unknown tool arguments.
+- Preserve no-retry ambiguous-outcome protection for all write operations, including uploads.
+
 ## [0.1.6] - 2026-07-18
 
 ### Fixed

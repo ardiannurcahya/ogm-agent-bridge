@@ -9,8 +9,8 @@ Bridge loads `.env` without overriding process environment. One process serves o
 | `OGM_PROJECT_ID` | yes | none | UUID sent as `X-Project-Id`. |
 | `OGM_TIMEOUT_SECONDS` | no | `30.0` | Positive number. |
 | `OGM_MAX_RETRIES` | no | `2` | Non-negative integer for transient requests. |
-| `OGM_PERMISSION_PROFILE` | no | `personal-safe` | `read-only`, `personal-safe`, or `memory-curator`. |
-| `OGM_UPLOAD_ROOTS` | no | process working directory | OS-path-separator list of resolved roots. |
+| `OGM_PERMISSION_PROFILE` | no | `read-only` | `read-only`, `personal-safe`, or `memory-curator`. |
+| `OGM_UPLOAD_ROOTS` | no | unset; uploads disabled | OS-path-separator list of resolved roots. |
 
 `read-only` permits health, graph reads, and Agent Memory retrieval. `personal-safe` adds document upload plus additive Agent Memory records. `memory-curator` adds Agent Memory feedback and supersession. No full profile or admin profile exists.
 
@@ -19,6 +19,7 @@ OGM_BASE_URL=http://localhost:8000
 OGM_API_KEY=<project-api-key>
 OGM_PROJECT_ID=<project-uuid>
 OGM_PERMISSION_PROFILE=read-only
+# Required before using ogm_upload_document.
 # OGM_UPLOAD_ROOTS=/srv/approved:/home/me/project/docs
 ```
 

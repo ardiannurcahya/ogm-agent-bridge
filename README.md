@@ -45,7 +45,7 @@ uv tool install ogm-agent-bridge
 Or run without installing:
 
 ```bash
-uvx ogm-agent-bridge --version
+uvx ogm-agent-bridge==0.1.7 --version
 ```
 
 `pipx` also works:
@@ -94,7 +94,7 @@ Add MCP server config to project `.mcp.json`:
   "mcpServers": {
     "ogm": {
       "command": "uvx",
-      "args": ["ogm-agent-bridge"],
+      "args": ["ogm-agent-bridge==0.1.7"],
       "env": {
         "OGM_BASE_URL": "${OGM_BASE_URL}",
         "OGM_API_KEY": "${OGM_API_KEY}",
@@ -121,7 +121,7 @@ Add MCP server config to `opencode.json` or `opencode.jsonc`:
   "mcp": {
     "ogm": {
       "type": "local",
-      "command": ["uvx", "ogm-agent-bridge"],
+      "command": ["uvx", "ogm-agent-bridge==0.1.7"],
       "environment": {
         "OGM_BASE_URL": "{env:OGM_BASE_URL}",
         "OGM_API_KEY": "{env:OGM_API_KEY}",
@@ -145,7 +145,7 @@ mcp_servers:
   ogm:
     command: "uvx"
     args:
-      - "ogm-agent-bridge"
+      - "ogm-agent-bridge==0.1.7"
     env:
       OGM_BASE_URL: "${OGM_BASE_URL}"
       OGM_API_KEY: "${OGM_API_KEY}"
@@ -160,7 +160,7 @@ Verify:
 hermes mcp test ogm
 ```
 
-For source development, replace `uvx ogm-agent-bridge` with:
+For source development, replace `uvx ogm-agent-bridge==0.1.7` with:
 
 ```bash
 uv run --project /absolute/path/ogm-agent-bridge ogm-agent-bridge

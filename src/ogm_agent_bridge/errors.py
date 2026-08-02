@@ -30,6 +30,16 @@ class ValidationError(BridgeError):
     code = "validation_error"
 
 
+class ConflictError(BridgeError):
+    status_code = 409
+    code = "conflict"
+
+
+class RateLimitError(BridgeError):
+    status_code = 429
+    code = "rate_limited"
+
+
 class PayloadTooLargeError(BridgeError):
     status_code = 413
     code = "payload_too_large"
@@ -59,15 +69,18 @@ class AmbiguousWriteError(UpstreamError):
     """Core may have accepted write before gateway failure."""
 
 
-def error_from_status(status_code: int, message: str = "Request failed") -> BridgeError:
+def error_from_status(status_code: int) -> BridgeError:
     """Map upstream HTTP status to public error type."""
     mapping: dict[int, type[BridgeError]] = {
         401: AuthenticationError,
         403: PermissionError,
         404: NotFoundError,
+        408: TimeoutError,
+        409: ConflictError,
         413: PayloadTooLargeError,
         415: UnsupportedMediaError,
+        429: RateLimitError,
     }
-    if status_code == 400 or 422 <= status_code < 500:
-        return ValidationError(message)
-    return mapping.get(status_code, UpstreamError)(message)
+    if status_code == 400 or status_code == 422:
+        return ValidationError("Core API rejected the request")
+    return mapping.get(status_code, UpstreamError)("Core API request failed")

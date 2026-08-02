@@ -338,6 +338,10 @@ def create_server(settings: Settings | None = None) -> FastMCP:
             superseding_pattern_key,
         )
 
+    # FastMCP derives schemas from signatures; forbid argument smuggling on every
+    # public tool in addition to handler-level validation.
+    for tool in server._tool_manager._tools.values():
+        tool.parameters["additionalProperties"] = False
     return server
 
 

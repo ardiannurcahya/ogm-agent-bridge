@@ -53,8 +53,9 @@ async def test_http_error_matrix_closes_response(
         return response
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
-        with pytest.raises(error, match="failure"):
+        with pytest.raises(error) as caught:
             await OGMClient(settings, http_client).request("GET", "/v1/test")
+    assert "failure" not in str(caught.value)
 
     assert response is not None and response.is_closed
 

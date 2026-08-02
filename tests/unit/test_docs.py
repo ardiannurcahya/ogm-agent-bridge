@@ -42,7 +42,7 @@ TOOLS = {
 ENV_DEFAULTS = {
     "OGM_TIMEOUT_SECONDS": "30",
     "OGM_MAX_RETRIES": "2",
-    "OGM_PERMISSION_PROFILE": "personal-safe",
+    "OGM_PERMISSION_PROFILE": "read-only",
 }
 
 

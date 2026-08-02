@@ -20,7 +20,8 @@ async def list_datasets(client: OGMClient) -> dict[str, Any]:
 async def search_entities(
     client: OGMClient, arguments: Mapping[str, Any]
 ) -> dict[str, Any]:
-    dataset_id = _string(arguments, "dataset_id", 1)
+    _arguments(arguments, {"dataset_id", "q", "entity_type", "limit"})
+    dataset_id = _route_component(arguments.get("dataset_id"), "dataset_id", 1)
     params = {"q": _string(arguments, "q", 1, 200)}
     _optional_string(arguments, params, "entity_type", 100)
     _integer(arguments, params, "limit", 1, 100)
@@ -31,14 +32,19 @@ async def search_entities(
 
 async def get_entity(client: OGMClient, entity_id: str) -> dict[str, Any]:
     return await _get(
-        client, f"/v1/entities/{_value(entity_id, 'entity_id', 1)}", {}, None, entity_id
+        client,
+        f"/v1/entities/{_route_component(entity_id, 'entity_id', 1)}",
+        {},
+        None,
+        entity_id,
     )
 
 
 async def get_neighbors(
     client: OGMClient, arguments: Mapping[str, Any]
 ) -> dict[str, Any]:
-    entity_id = _string(arguments, "entity_id", 1)
+    _arguments(arguments, {"entity_id", "limit"})
+    entity_id = _route_component(arguments.get("entity_id"), "entity_id", 1)
     params: dict[str, Any] = {}
     _integer(arguments, params, "limit", 1, 100)
     return await _get(
@@ -47,7 +53,17 @@ async def get_neighbors(
 
 
 async def find_path(client: OGMClient, arguments: Mapping[str, Any]) -> dict[str, Any]:
-    dataset_id = _string(arguments, "dataset_id", 1)
+    _arguments(
+        arguments,
+        {
+            "dataset_id",
+            "source_entity_id",
+            "target_entity_id",
+            "max_depth",
+            "relation_limit",
+        },
+    )
+    dataset_id = _route_component(arguments.get("dataset_id"), "dataset_id", 1)
     params = {
         "source_entity_id": _string(arguments, "source_entity_id", 1),
         "target_entity_id": _string(arguments, "target_entity_id", 1),
@@ -62,7 +78,10 @@ async def find_path(client: OGMClient, arguments: Mapping[str, Any]) -> dict[str
 async def get_subgraph(
     client: OGMClient, arguments: Mapping[str, Any]
 ) -> dict[str, Any]:
-    dataset_id = _string(arguments, "dataset_id", 1)
+    _arguments(
+        arguments, {"dataset_id", "entity_id", "depth", "node_limit", "relation_limit"}
+    )
+    dataset_id = _route_component(arguments.get("dataset_id"), "dataset_id", 1)
     params = {"entity_id": _string(arguments, "entity_id", 1)}
     _integer(arguments, params, "depth", 0, 2)
     _integer(arguments, params, "node_limit", 1, 200)
@@ -73,7 +92,8 @@ async def get_subgraph(
 
 
 async def get_graph(client: OGMClient, arguments: Mapping[str, Any]) -> dict[str, Any]:
-    dataset_id = _string(arguments, "dataset_id", 1)
+    _arguments(arguments, {"dataset_id", "limit", "depth"})
+    dataset_id = _route_component(arguments.get("dataset_id"), "dataset_id", 1)
     params: dict[str, Any] = {}
     _integer(arguments, params, "limit", 1, 200)
     _integer(arguments, params, "depth", 0, 1)
@@ -83,7 +103,7 @@ async def get_graph(client: OGMClient, arguments: Mapping[str, Any]) -> dict[str
 async def get_evidence(client: OGMClient, evidence_id: str) -> dict[str, Any]:
     return await _get(
         client,
-        f"/v1/evidence/{_value(evidence_id, 'evidence_id', 1)}",
+        f"/v1/evidence/{_route_component(evidence_id, 'evidence_id', 1)}",
         {},
         None,
         None,
@@ -94,8 +114,9 @@ async def get_evidence(client: OGMClient, evidence_id: str) -> dict[str, Any]:
 async def get_relation_evidence(
     client: OGMClient, arguments: Mapping[str, Any]
 ) -> dict[str, Any]:
-    dataset_id = _string(arguments, "dataset_id", 1)
-    relation_id = _string(arguments, "relation_id", 1)
+    _arguments(arguments, {"dataset_id", "relation_id", "limit"})
+    dataset_id = _route_component(arguments.get("dataset_id"), "dataset_id", 1)
+    relation_id = _route_component(arguments.get("relation_id"), "relation_id", 1)
     params: dict[str, Any] = {}
     _integer(arguments, params, "limit", 1, 100)
     return await _get(
@@ -146,6 +167,25 @@ def _value(value: object, name: str, minimum: int, maximum: int | None = None) -
     ):
         raise ValidationError(f"{name} has invalid length")
     return value
+
+
+def _route_component(
+    value: object, name: str, minimum: int, maximum: int | None = None
+) -> str:
+    """Validate a caller-provided value used as one literal URL path segment."""
+    component = _value(value, name, minimum, maximum)
+    if (
+        any(ord(character) < 32 or ord(character) == 127 for character in component)
+        or any(delimiter in component for delimiter in ("/", "\\", "?", "#", "%", "&"))
+        or component in {".", ".."}
+    ):
+        raise ValidationError(f"{name} must be a safe route component")
+    return component
+
+
+def _arguments(arguments: Mapping[str, Any], allowed: set[str]) -> None:
+    if set(arguments) - allowed:
+        raise ValidationError("unknown argument")
 
 
 def _integer(

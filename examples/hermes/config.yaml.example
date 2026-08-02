@@ -2,7 +2,7 @@ mcp_servers:
   ogm:
     command: "uvx"
     args:
-      - "ogm-agent-bridge"
+      - "ogm-agent-bridge==0.1.7"
     env:
       OGM_BASE_URL: "${OGM_BASE_URL}"
       OGM_API_KEY: "${OGM_API_KEY}"

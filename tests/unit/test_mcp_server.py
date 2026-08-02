@@ -87,3 +87,4 @@ async def test_server_exposes_explicit_read_tool_schemas() -> None:
         "hypothesis",
         "result",
     ]
+    assert all(schema.get("additionalProperties") is False for schema in tools.values())

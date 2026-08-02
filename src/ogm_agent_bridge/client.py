@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
+import datetime
+import email.utils
+import math
 from collections.abc import Mapping
 from typing import Any
 
@@ -16,7 +20,9 @@ from ogm_agent_bridge.errors import (
     error_from_status,
 )
 
-_RETRYABLE_STATUS_CODES = frozenset({502, 503})
+_RETRYABLE_STATUS_CODES = frozenset({429, 502, 503, 504})
+_MAX_RETRY_AFTER_SECONDS = 30.0
+_SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 
 
 class OGMClient:
@@ -58,7 +64,7 @@ class OGMClient:
         retry: bool = True,
         ambiguous_write: bool = False,
     ) -> httpx.Response:
-        """Send core request; callers disable retry for non-idempotent writes."""
+        """Send a request, retrying only bounded safe/read operations."""
         headers = (
             {
                 "X-API-Key": self._settings.api_key,
@@ -67,7 +73,8 @@ class OGMClient:
             if authenticated
             else {}
         )
-        retries = self._settings.max_retries if retry else 0
+        is_safe_request = method.upper() in _SAFE_METHODS
+        retries = self._settings.max_retries if retry and is_safe_request else 0
         for attempt in range(retries + 1):
             try:
                 response = await self._client.request(
@@ -86,6 +93,7 @@ class OGMClient:
                             "Core API write may have succeeded"
                         ) from error
                     raise TimeoutError("Core API request timed out") from error
+                await _sleep_before_retry(None)
                 continue
             except httpx.RequestError as error:
                 if attempt == retries:
@@ -94,18 +102,22 @@ class OGMClient:
                             "Core API write may have succeeded"
                         ) from error
                     raise TransportError("Core API transport failed") from error
+                await _sleep_before_retry(None)
                 continue
-            if response.status_code in _RETRYABLE_STATUS_CODES and ambiguous_write:
-                message = _message(response)
+            # A server error can occur after Core accepted a non-idempotent
+            # write.  Rate limiting and client errors, however, have definite
+            # outcomes and retain their normal public error mappings.
+            if ambiguous_write and 500 <= response.status_code <= 599:
                 await response.aclose()
-                raise AmbiguousWriteError(message)
+                raise AmbiguousWriteError("Core API write outcome is unknown")
             if response.status_code in _RETRYABLE_STATUS_CODES and attempt < retries:
+                delay = _retry_after(response)
                 await response.aclose()
+                await _sleep_before_retry(delay)
                 continue
-            if response.is_error:
-                message = _message(response)
+            if not 200 <= response.status_code <= 299:
                 await response.aclose()
-                raise error_from_status(response.status_code, message)
+                raise error_from_status(response.status_code)
             try:
                 response.json()
             except ValueError as error:
@@ -115,10 +127,27 @@ class OGMClient:
         raise AssertionError("retry loop must return or raise")
 
 
-def _message(response: httpx.Response) -> str:
+def _retry_after(response: httpx.Response) -> float | None:
+    """Parse Retry-After without trusting malformed or unbounded values."""
+    value = response.headers.get("Retry-After")
+    if value is None:
+        return None
     try:
-        body = response.json()
-    except ValueError:
-        return "Core API request failed"
-    detail = body.get("detail") if isinstance(body, dict) else None
-    return detail if isinstance(detail, str) else "Core API request failed"
+        delay = float(value)
+    except (TypeError, ValueError):
+        try:
+            retry_at = email.utils.parsedate_to_datetime(value)
+        except (TypeError, ValueError, OverflowError):
+            return None
+        if retry_at.tzinfo is None:
+            retry_at = retry_at.replace(tzinfo=datetime.UTC)
+        delay = (retry_at - datetime.datetime.now(datetime.UTC)).total_seconds()
+        delay = max(0.0, delay)
+    if not math.isfinite(delay) or delay < 0:
+        return None
+    return min(_MAX_RETRY_AFTER_SECONDS, delay)
+
+
+async def _sleep_before_retry(delay: float | None) -> None:
+    # A short bounded fallback prevents immediate retry storms when no hint exists.
+    await asyncio.sleep(0.1 if delay is None else delay)

@@ -20,6 +20,13 @@ def test_loads_required_values_and_defaults(env: dict[str, str]) -> None:
     assert settings.base_url == "https://api.example.test"
     assert settings.timeout_seconds == 30.0
     assert settings.max_retries == 2
+    assert settings.upload_roots == ()
+
+
+def test_loads_explicit_upload_roots(env: dict[str, str], tmp_path: Path) -> None:
+    env["OGM_UPLOAD_ROOTS"] = str(tmp_path)
+
+    assert load_settings(env).upload_roots == (tmp_path.resolve(),)
 
 
 def test_loads_dotenv_file(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -48,7 +55,10 @@ def test_rejects_missing_required_value(env: dict[str, str]) -> None:
     ("name", "value", "message"),
     [
         ("OGM_TIMEOUT_SECONDS", "0", "must be positive"),
+        ("OGM_TIMEOUT_SECONDS", "nan", "must be finite"),
+        ("OGM_TIMEOUT_SECONDS", "121", "must not exceed"),
         ("OGM_MAX_RETRIES", "-1", "must be non-negative"),
+        ("OGM_MAX_RETRIES", "6", "must not exceed"),
     ],
 )
 def test_rejects_invalid_optional_values(

@@ -7,10 +7,12 @@ from ogm_agent_bridge.agent_memory_tools import (
     append_attempt,
     create_episode,
     feedback_episode,
+    feedback_pattern,
     get_episode,
     list_episodes,
     record_outcome,
     search,
+    supersede_episode,
     supersede_pattern,
 )
 from ogm_agent_bridge.client import OGMClient
@@ -200,3 +202,99 @@ async def test_memory_permissions_and_validation_are_local(settings: Settings) -
     with pytest.raises(ValidationError):
         await supersede_pattern(client, "memory-curator", "same", "same")
     await client.aclose()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "selector",
+    [
+        f"{EPISODE_ID}?redirect=x",
+        f"{EPISODE_ID}#fragment",
+        f"{EPISODE_ID}%2fescape",
+        f"{EPISODE_ID}&x=1",
+        f"{EPISODE_ID}/escape",
+        f"{EPISODE_ID}\\escape",
+        f"{EPISODE_ID}\nvalue",
+        f"{EPISODE_ID}\x00value",
+    ],
+)
+async def test_memory_rejects_delimiter_and_encoded_route_injection(
+    settings: Settings, selector: str
+) -> None:
+    with pytest.raises(ValidationError):
+        await get_episode(OGMClient(settings), selector)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "selector",
+    [
+        f"{EPISODE_ID}?redirect=x",
+        f"{EPISODE_ID}#fragment",
+        f"{EPISODE_ID}%2fescape",
+        f"{EPISODE_ID}&x=1",
+        f"{EPISODE_ID}/escape",
+        f"{EPISODE_ID}\\escape",
+        f"{EPISODE_ID}\nvalue",
+        f"{EPISODE_ID}\x00value",
+    ],
+)
+@pytest.mark.parametrize(
+    "handler",
+    [
+        lambda client, value: append_attempt(
+            client,
+            "personal-safe",
+            value,
+            {"hypothesis": "h", "result": "success"},
+        ),
+        lambda client, value: record_outcome(
+            client, "personal-safe", value, {"status": "success", "summary": "s"}
+        ),
+        lambda client, value: feedback_episode(client, "memory-curator", value, 1),
+        lambda client, value: supersede_episode(
+            client, "memory-curator", value, REPLACEMENT_ID
+        ),
+        lambda client, value: supersede_episode(
+            client, "memory-curator", EPISODE_ID, value
+        ),
+    ],
+)
+async def test_memory_rejects_episode_id_route_injection_every_handler(
+    settings: Settings, selector: str, handler
+) -> None:
+    with pytest.raises(ValidationError):
+        await handler(OGMClient(settings), selector)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "selector",
+    [
+        "pattern?redirect=x",
+        "pattern#fragment",
+        "pattern%2fescape",
+        "pattern&x=1",
+        "pattern/escape",
+        "pattern\\escape",
+        "pattern\nvalue",
+        "pattern\x00value",
+    ],
+)
+@pytest.mark.parametrize(
+    "handler",
+    [
+        lambda client, value: feedback_pattern(client, "memory-curator", value, 1),
+        lambda client, value: supersede_pattern(
+            client, "memory-curator", value, "replacement"
+        ),
+        lambda client, value: supersede_pattern(
+            client, "memory-curator", "pattern", value
+        ),
+    ],
+)
+async def test_memory_rejects_pattern_key_route_injection_every_handler(
+    settings: Settings, selector: str, handler
+) -> None:
+    with pytest.raises(ValidationError):
+        await handler(OGMClient(settings), selector)
