@@ -4,11 +4,28 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ## [0.1.7] - 2026-08-02
 
+### Added
+
+- Ten Agent Memory MCP tools aligned with the OpenGraphMemory core `v0.1.0` source-level HTTP contract.
+- Contract coverage for MCP registration, HTTP routes, payloads, redirects, ambiguous writes, and secure uploads.
+
+### Changed
+
+- Default permission profile is `read-only`; write and curator capabilities require explicit opt-in.
+- All documented `uvx` harness examples pin `ogm-agent-bridge==0.1.7`.
+- Upload roots are explicit allowlists and are empty by default.
+
 ### Fixed
 
-- Sanitize upstream failures, correctly classify audited HTTP statuses, and bound safe-request retries.
-- Reject invalid configuration values and malformed or unknown tool arguments.
+- Sanitize upstream failures, reject every non-2xx response, correctly classify audited HTTP statuses, and bound safe-request retries.
+- Reject non-finite or excessive timeout/retry configuration and malformed or unknown tool arguments.
 - Preserve no-retry ambiguous-outcome protection for all write operations, including uploads.
+- Validate uploads through descriptor-anchored, symlink-resistant file handling and close every descriptor/response.
+
+### Security
+
+- Raw upstream error details are no longer exposed to MCP callers.
+- A missing `OGM_UPLOAD_ROOTS` no longer falls back to exposing the process working directory.
 
 ## [0.1.6] - 2026-07-18
 
