@@ -5,10 +5,10 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from ogm_agent_bridge.client import OGMClient
-from ogm_agent_bridge.errors import ValidationError
-from ogm_agent_bridge.permissions import require_read
-from ogm_agent_bridge.responses import envelope
+from ogm_mcp_skills.client import OGMClient
+from ogm_mcp_skills.errors import ValidationError
+from ogm_mcp_skills.permissions import require_read
+from ogm_mcp_skills.responses import envelope
 
 
 async def list_datasets(client: OGMClient) -> dict[str, Any]:

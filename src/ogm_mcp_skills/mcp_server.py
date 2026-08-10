@@ -8,8 +8,8 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from ogm_agent_bridge import __version__
-from ogm_agent_bridge.agent_memory_tools import (
+from ogm_mcp_skills import __version__
+from ogm_mcp_skills.agent_memory_tools import (
     append_attempt,
     create_episode,
     feedback_episode,
@@ -19,14 +19,14 @@ from ogm_agent_bridge.agent_memory_tools import (
     supersede_episode,
     supersede_pattern,
 )
-from ogm_agent_bridge.agent_memory_tools import (
+from ogm_mcp_skills.agent_memory_tools import (
     get_episode as get_memory_episode,
 )
-from ogm_agent_bridge.agent_memory_tools import (
+from ogm_mcp_skills.agent_memory_tools import (
     search as search_memory,
 )
-from ogm_agent_bridge.client import OGMClient
-from ogm_agent_bridge.codebase_tools import (
+from ogm_mcp_skills.client import OGMClient
+from ogm_mcp_skills.codebase_tools import (
     get_code_call_graph,
     get_code_chunks,
     recall_code_memory,
@@ -34,11 +34,11 @@ from ogm_agent_bridge.codebase_tools import (
     search_code_symbols,
     sync_code_file,
 )
-from ogm_agent_bridge.config import Settings, load_settings
-from ogm_agent_bridge.errors import BridgeError
-from ogm_agent_bridge.permissions import require_read
-from ogm_agent_bridge.responses import envelope, safe_error
-from ogm_agent_bridge.tools import (
+from ogm_mcp_skills.config import Settings, load_settings
+from ogm_mcp_skills.errors import BridgeError
+from ogm_mcp_skills.permissions import require_read
+from ogm_mcp_skills.responses import envelope, safe_error
+from ogm_mcp_skills.tools import (
     find_path,
     get_entity,
     get_evidence,
@@ -59,7 +59,7 @@ async def health(client: OGMClient) -> dict[str, Any]:
 
 def create_server(settings: Settings | None = None) -> FastMCP:
     resolved_settings = settings or load_settings()
-    server = FastMCP("ogm-agent-bridge")
+    server = FastMCP("ogm-mcp-skills")
 
     @server.tool(description="Check OpenGraphMemory core liveness.")
     async def ogm_health() -> dict[str, Any]:
@@ -166,7 +166,7 @@ def create_server(settings: Settings | None = None) -> FastMCP:
         mime_type: str | None = None,
     ) -> dict[str, Any]:
         try:
-            from ogm_agent_bridge.write_tools import upload_document
+            from ogm_mcp_skills.write_tools import upload_document
 
             async with OGMClient(resolved_settings) as client:
                 return await upload_document(
@@ -490,7 +490,7 @@ def _defined(**values: Any) -> dict[str, Any]:
 def _tool_error(error: Exception) -> dict[str, Any]:
     if isinstance(error, BridgeError):
         return safe_error(error)
-    print("ogm-agent-bridge: internal tool failure", file=sys.stderr)
+    print("ogm-mcp-skills: internal tool failure", file=sys.stderr)
     return safe_error(BridgeError("Internal bridge error"))
 
 

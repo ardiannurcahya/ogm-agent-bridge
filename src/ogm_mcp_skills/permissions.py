@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ogm_agent_bridge.errors import PermissionError
+from ogm_mcp_skills.errors import PermissionError
 
 _READ_PERMISSIONS = frozenset(
     {"health", "datasets:read", "graph:read", "agent-memory:read"}

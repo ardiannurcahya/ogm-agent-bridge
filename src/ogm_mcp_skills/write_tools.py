@@ -10,10 +10,10 @@ import uuid
 from pathlib import Path
 from typing import Any, BinaryIO
 
-from ogm_agent_bridge.client import OGMClient
-from ogm_agent_bridge.errors import ValidationError
-from ogm_agent_bridge.permissions import require_write
-from ogm_agent_bridge.responses import envelope
+from ogm_mcp_skills.client import OGMClient
+from ogm_mcp_skills.errors import ValidationError
+from ogm_mcp_skills.permissions import require_write
+from ogm_mcp_skills.responses import envelope
 
 _MAX_FILENAME_LENGTH = 255
 _MAX_PATH_LENGTH = 4_096

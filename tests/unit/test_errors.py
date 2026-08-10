@@ -1,6 +1,6 @@
 import pytest
 
-from ogm_agent_bridge.errors import (
+from ogm_mcp_skills.errors import (
     AuthenticationError,
     NotFoundError,
     PayloadTooLargeError,

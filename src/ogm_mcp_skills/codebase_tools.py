@@ -1,20 +1,20 @@
-"""Codebase Knowledge Graph & Agent Memory tool handlers for ogm-agent-bridge."""
+"""Codebase Knowledge Graph & Agent Memory tool handlers for ogm-mcp-skills."""
 
 from __future__ import annotations
 
 from collections.abc import Mapping
 from typing import Any
 
-from ogm_agent_bridge.client import OGMClient
-from ogm_agent_bridge.errors import ValidationError
-from ogm_agent_bridge.permissions import (
+from ogm_mcp_skills.client import OGMClient
+from ogm_mcp_skills.errors import ValidationError
+from ogm_mcp_skills.permissions import (
     require_memory_read,
     require_memory_write,
     require_read,
     require_write,
 )
-from ogm_agent_bridge.responses import envelope
-from ogm_agent_bridge.tools import (
+from ogm_mcp_skills.responses import envelope
+from ogm_mcp_skills.tools import (
     _arguments,
     _get,
     _integer,

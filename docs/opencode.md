@@ -1,8 +1,8 @@
 # OpenCode Setup
 
-Install from PyPI with `uv tool install ogm-agent-bridge`, or run directly with `uvx ogm-agent-bridge==0.1.7`.
+Install from PyPI with `uv tool install ogm-mcp-skills`, or run directly with `uvx ogm-mcp-skills==0.1.7`.
 
-Merge `examples/opencode/opencode.json.example` into trusted OpenCode config. Default example uses `uvx` and PyPI. For source development, replace command with `uv run --project /absolute/path/ogm-agent-bridge ogm-agent-bridge`.
+Merge `examples/opencode/opencode.json.example` into trusted OpenCode config. Default example uses `uvx` and PyPI. For source development, replace command with `uv run --project /absolute/path/ogm-mcp-skills ogm-mcp-skills`.
 
 Export `OGM_BASE_URL`, `OGM_API_KEY`, `OGM_PROJECT_ID`, and `OGM_PERMISSION_PROFILE` before starting OpenCode. Keep `{env:OGM_*}` entries; do not commit keys.
 

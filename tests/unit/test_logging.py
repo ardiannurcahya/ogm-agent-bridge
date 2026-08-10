@@ -1,7 +1,7 @@
 import json
 import logging
 
-from ogm_agent_bridge.logging import JsonFormatter, redact_secrets
+from ogm_mcp_skills.logging import JsonFormatter, redact_secrets
 
 
 def test_redacts_nested_secrets() -> None:
@@ -15,7 +15,7 @@ def test_redacts_nested_secrets() -> None:
 
 def test_formatter_never_emits_secret() -> None:
     record = logging.LogRecord(
-        "ogm_agent_bridge", logging.INFO, "", 0, "request", (), None
+        "ogm_mcp_skills", logging.INFO, "", 0, "request", (), None
     )
     record.context = {"authorization": "Bearer secret-123", "path": "/health"}
 

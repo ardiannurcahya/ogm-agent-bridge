@@ -11,8 +11,8 @@ from typing import Any
 
 import httpx
 
-from ogm_agent_bridge.config import Settings
-from ogm_agent_bridge.errors import (
+from ogm_mcp_skills.config import Settings
+from ogm_mcp_skills.errors import (
     AmbiguousWriteError,
     TimeoutError,
     TransportError,

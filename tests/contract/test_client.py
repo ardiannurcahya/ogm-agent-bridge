@@ -5,9 +5,9 @@ import email.utils
 import httpx
 import pytest
 
-from ogm_agent_bridge.client import OGMClient, _retry_after
-from ogm_agent_bridge.config import Settings
-from ogm_agent_bridge.errors import (
+from ogm_mcp_skills.client import OGMClient, _retry_after
+from ogm_mcp_skills.config import Settings
+from ogm_mcp_skills.errors import (
     AmbiguousWriteError,
     AuthenticationError,
     ConflictError,

@@ -3,9 +3,9 @@ requires = ["hatchling==1.27.0"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ogm-agent-bridge"
+name = "ogm-mcp-skills"
 version = "0.1.7"
-description = "MCP bridge for OpenGraphMemory"
+description = "MCP Server and AI Agent Skills for OpenGraphMemory"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
@@ -27,15 +27,16 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ardiannurcahya/ogm-agent-bridge"
-Repository = "https://github.com/ardiannurcahya/ogm-agent-bridge"
-Issues = "https://github.com/ardiannurcahya/ogm-agent-bridge/issues"
+Homepage = "https://github.com/ardiannurcahya/ogm-mcp-skills"
+Repository = "https://github.com/ardiannurcahya/ogm-mcp-skills"
+Issues = "https://github.com/ardiannurcahya/ogm-mcp-skills/issues"
 
 [project.scripts]
-ogm-agent-bridge = "ogm_agent_bridge.mcp_server:main"
+ogm-mcp-skills = "ogm_mcp_skills.mcp_server:main"
+ogm-mcp = "ogm_mcp_skills.mcp_server:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/ogm_agent_bridge"]
+packages = ["src/ogm_mcp_skills"]
 
 [dependency-groups]
 dev = [

@@ -1,8 +1,8 @@
-# ogm-agent-bridge
+# ogm-mcp-skills
 
-MCP stdio bridge from Claude Code, OpenCode, and Hermes to one OpenGraphMemory project.
+MCP stdio server and AI Agent Skills from Claude Code, OpenCode, Antigravity, and Hermes to OpenGraphMemory and the Codebase Knowledge Graph.
 
-Bridge uses authenticated OpenGraphMemory REST APIs only. It is stateless: no local database, session mapping, direct PostgreSQL, Neo4j, or object-store access.
+The MCP server uses authenticated OpenGraphMemory REST APIs only. It is stateless: no local database, session mapping, direct PostgreSQL, Neo4j, or object-store access.
 
 ## Status
 
@@ -39,33 +39,33 @@ Alpha. PyPI releases are published from GitHub Actions on `v*` tags. Source inst
 - `ogm_sync_code_file`
 
 
-Read tools inspect PostgreSQL-authoritative graph and Agent Memory data. Agent Memory results are historical claims: inspect recorded evidence and verifiers before relying on them. `personal-safe` permits reviewed document upload and additive Agent Memory records; `memory-curator` additionally permits memory feedback and supersession. No delete, admin, project-create, relation-review, analytics-refresh, semantic-retrieval, or automatic conversation-ingestion tools exist.
+Read tools inspect PostgreSQL-authoritative graph and Agent Memory data. Agent Memory results are historical claims: inspect recorded evidence and verifiers before relying on them. `personal-safe` permits reviewed document upload, additive Agent Memory records, and code sync; `memory-curator` additionally permits memory feedback and supersession. No delete, admin, project-create, relation-review, analytics-refresh, semantic-retrieval, or automatic conversation-ingestion tools exist.
 
 ## Install
 
 Install from PyPI with `uv`:
 
 ```bash
-uv tool install ogm-agent-bridge
+uv tool install ogm-mcp-skills
 ```
 
 Or run without installing:
 
 ```bash
-uvx ogm-agent-bridge==0.1.7 --version
+uvx ogm-mcp-skills==0.1.7 --version
 ```
 
 `pipx` also works:
 
 ```bash
-pipx install ogm-agent-bridge
+pipx install ogm-mcp-skills
 ```
 
 For source development:
 
 ```bash
-git clone https://github.com/ardiannurcahya/ogm-agent-bridge.git "$HOME/src/ogm-agent-bridge"
-cd "$HOME/src/ogm-agent-bridge"
+git clone https://github.com/ardiannurcahya/ogm-mcp-skills.git "$HOME/src/ogm-mcp-skills"
+cd "$HOME/src/ogm-mcp-skills"
 uv sync --locked
 ```
 
@@ -101,7 +101,7 @@ Add MCP server config to project `.mcp.json`:
   "mcpServers": {
     "ogm": {
       "command": "uvx",
-      "args": ["ogm-agent-bridge==0.1.7"],
+      "args": ["ogm-mcp-skills==0.1.7"],
       "env": {
         "OGM_BASE_URL": "${OGM_BASE_URL}",
         "OGM_API_KEY": "${OGM_API_KEY}",
@@ -128,7 +128,7 @@ Add MCP server config to `opencode.json` or `opencode.jsonc`:
   "mcp": {
     "ogm": {
       "type": "local",
-      "command": ["uvx", "ogm-agent-bridge==0.1.7"],
+      "command": ["uvx", "ogm-mcp-skills==0.1.7"],
       "environment": {
         "OGM_BASE_URL": "{env:OGM_BASE_URL}",
         "OGM_API_KEY": "{env:OGM_API_KEY}",
@@ -152,7 +152,7 @@ mcp_servers:
   ogm:
     command: "uvx"
     args:
-      - "ogm-agent-bridge==0.1.7"
+      - "ogm-mcp-skills==0.1.7"
     env:
       OGM_BASE_URL: "${OGM_BASE_URL}"
       OGM_API_KEY: "${OGM_API_KEY}"
@@ -167,10 +167,10 @@ Verify:
 hermes mcp test ogm
 ```
 
-For source development, replace `uvx ogm-agent-bridge==0.1.7` with:
+For source development, replace `uvx ogm-mcp-skills==0.1.7` with:
 
 ```bash
-uv run --project /absolute/path/ogm-agent-bridge ogm-agent-bridge
+uv run --project /absolute/path/ogm-mcp-skills ogm-mcp-skills
 ```
 
 MCP uses stdio. Diagnostics go to stderr.

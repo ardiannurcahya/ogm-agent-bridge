@@ -1,13 +1,13 @@
 ---
-name: ogm-agent-bridge
+name: ogm-mcp-skills
 description: >-
-  Production-grade guide and specification for AI agents interacting with Open Graph Memory (OGM) and the Codebase Knowledge Graph via the ogm-agent-bridge MCP server.
+  Production-grade guide and specification for AI agents interacting with Open Graph Memory (OGM) and the Codebase Knowledge Graph via the ogm-mcp-skills MCP server.
   Activate this skill when searching AST symbols (functions, classes, methods, structs, interfaces), inspecting call graphs, reading structural code chunks, performing real-time AST sync, recalling historical bugfixes/refactors, or recording new engineering memory episodes.
 ---
 
-# Open Graph Memory (OGM) Agent Bridge Skill
+# Open Graph Memory (OGM) MCP Server & Skills
 
-A production-grade specification, runbook, and tool reference for autonomous AI coding agents interfacing with **Open Graph Memory (OGM)** and the **Codebase Knowledge Graph** via `ogm-agent-bridge`.
+A production-grade specification, runbook, and tool reference for autonomous AI coding agents interfacing with **Open Graph Memory (OGM)** and the **Codebase Knowledge Graph** via `ogm-mcp-skills`.
 
 ---
 
@@ -15,8 +15,8 @@ A production-grade specification, runbook, and tool reference for autonomous AI 
 
 ```mermaid
 graph TD
-    Agent[AI Coding Agent] -->|MCP Stdio / SSE Protocol| Bridge[ogm-agent-bridge MCP Server]
-    Bridge -->|REST API / Async HTTP| Core[Open Graph Memory Backend]
+    Agent[AI Coding Agent] -->|MCP Stdio / SSE Protocol| Server[ogm-mcp-skills MCP Server]
+    Server -->|REST API / Async HTTP| Core[Open Graph Memory Backend]
     Core -->|AST Extraction / Tree-Sitter| AST[Code Extractor Engine]
     Core -->|Relational Graph / Vectors| DB[(PostgreSQL + pgvector)]
 ```

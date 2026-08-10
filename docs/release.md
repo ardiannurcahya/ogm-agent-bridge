@@ -10,11 +10,11 @@ publish succeeds. Failed PyPI publish leaves no GitHub Release.
 
 ## One-time PyPI Trusted Publisher setup
 
-1. Create `ogm-agent-bridge` project on PyPI, or make first release with a PyPI
+1. Create `ogm-mcp-skills` project on PyPI, or make first release with a PyPI
    project owner if PyPI requires project creation.
 2. In PyPI project **Publishing**, add GitHub Trusted Publisher:
    - Owner: `ardiannurcahya`
-   - Repository: `ogm-agent-bridge`
+   - Repository: `ogm-mcp-skills`
    - Workflow name: `release.yml`
    - Environment name: `pypi`
 3. In GitHub repository settings, create environment named `pypi`. Add required
@@ -43,7 +43,7 @@ secret belongs in GitHub.
    uvx twine check dist/*
    python -m venv /tmp/ogm-wheel-venv
    /tmp/ogm-wheel-venv/bin/pip install dist/*.whl
-   /tmp/ogm-wheel-venv/bin/ogm-agent-bridge --version
+   /tmp/ogm-wheel-venv/bin/ogm-mcp-skills --version
    rm -rf /tmp/ogm-wheel-venv
    ```
 

@@ -1,8 +1,8 @@
 # Claude Code Setup
 
-Install from PyPI with `uv tool install ogm-agent-bridge`, or run directly with `uvx ogm-agent-bridge==0.1.7`.
+Install from PyPI with `uv tool install ogm-mcp-skills`, or run directly with `uvx ogm-mcp-skills==0.1.7`.
 
-Copy `examples/claude-code/.mcp.json.example` to trusted project `.mcp.json`. Default example uses `uvx` and PyPI. For source development, replace command and args with `uv run --project /absolute/path/ogm-agent-bridge ogm-agent-bridge`.
+Copy `examples/claude-code/.mcp.json.example` to trusted project `.mcp.json`. Default example uses `uvx` and PyPI. For source development, replace command and args with `uv run --project /absolute/path/ogm-mcp-skills ogm-mcp-skills`.
 
 Export `OGM_BASE_URL`, `OGM_API_KEY`, `OGM_PROJECT_ID`, and `OGM_PERMISSION_PROFILE` before starting Claude Code. Do not put literal keys in `.mcp.json`.
 

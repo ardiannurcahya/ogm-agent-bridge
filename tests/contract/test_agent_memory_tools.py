@@ -3,7 +3,7 @@ import json
 import httpx
 import pytest
 
-from ogm_agent_bridge.agent_memory_tools import (
+from ogm_mcp_skills.agent_memory_tools import (
     append_attempt,
     create_episode,
     feedback_episode,
@@ -15,9 +15,9 @@ from ogm_agent_bridge.agent_memory_tools import (
     supersede_episode,
     supersede_pattern,
 )
-from ogm_agent_bridge.client import OGMClient
-from ogm_agent_bridge.config import Settings
-from ogm_agent_bridge.errors import (
+from ogm_mcp_skills.client import OGMClient
+from ogm_mcp_skills.config import Settings
+from ogm_mcp_skills.errors import (
     AmbiguousWriteError,
     PermissionError,
     ValidationError,

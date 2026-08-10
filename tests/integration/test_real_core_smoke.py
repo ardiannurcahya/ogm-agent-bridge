@@ -7,9 +7,9 @@ import os
 import httpx
 import pytest
 
-from ogm_agent_bridge.client import OGMClient
-from ogm_agent_bridge.config import load_settings
-from ogm_agent_bridge.tools import list_datasets, search_entities
+from ogm_mcp_skills.client import OGMClient
+from ogm_mcp_skills.config import load_settings
+from ogm_mcp_skills.tools import list_datasets, search_entities
 
 pytestmark = pytest.mark.skipif(
     os.environ.get("OGM_REAL_CORE_SMOKE") != "1",

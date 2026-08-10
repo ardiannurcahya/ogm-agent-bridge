@@ -48,4 +48,4 @@ jobs:
           version="$(python -c "from pathlib import Path; import tomllib; print(tomllib.loads(Path('pyproject.toml').read_text())['project']['version'])")"
           uv venv /tmp/ogm-wheel-venv --python 3.13
           uv pip install --python /tmp/ogm-wheel-venv/bin/python dist/*.whl
-          test "$(/tmp/ogm-wheel-venv/bin/ogm-agent-bridge --version)" = "$version"
+          test "$(/tmp/ogm-wheel-venv/bin/ogm-mcp-skills --version)" = "$version"

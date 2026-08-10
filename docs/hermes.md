@@ -1,8 +1,8 @@
 # Hermes Setup
 
-Install from PyPI with `uv tool install ogm-agent-bridge`, or run directly with `uvx ogm-agent-bridge==0.1.7`.
+Install from PyPI with `uv tool install ogm-mcp-skills`, or run directly with `uvx ogm-mcp-skills==0.1.7`.
 
-Merge `examples/hermes/config.yaml.example` under `mcp_servers`. Default example uses `uvx` and PyPI. For source development, replace command and args with `uv run --project /absolute/path/ogm-agent-bridge ogm-agent-bridge`.
+Merge `examples/hermes/config.yaml.example` under `mcp_servers`. Default example uses `uvx` and PyPI. For source development, replace command and args with `uv run --project /absolute/path/ogm-mcp-skills ogm-mcp-skills`.
 
 Put `OGM_BASE_URL`, `OGM_API_KEY`, `OGM_PROJECT_ID`, and `OGM_PERMISSION_PROFILE` in local `~/.hermes/.env` with mode `0600`. Do not put keys in `config.yaml`.
 

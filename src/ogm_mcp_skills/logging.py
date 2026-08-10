@@ -42,8 +42,8 @@ class JsonFormatter(logging.Formatter):
 
 
 def configure_logging(level: int = logging.INFO) -> logging.Logger:
-    """Configure bridge logger writing JSON only to stderr."""
-    logger = logging.getLogger("ogm_agent_bridge")
+    """Configure MCP server & skills logger writing JSON only to stderr."""
+    logger = logging.getLogger("ogm_mcp_skills")
     logger.setLevel(level)
     logger.handlers.clear()
     handler = logging.StreamHandler(sys.stderr)

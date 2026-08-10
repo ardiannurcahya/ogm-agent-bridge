@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from ogm_agent_bridge.config import ConfigError, load_settings
+from ogm_mcp_skills.config import ConfigError, load_settings
 
 
 @pytest.fixture

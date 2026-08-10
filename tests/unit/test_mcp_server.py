@@ -1,9 +1,9 @@
 import httpx
 import pytest
 
-from ogm_agent_bridge.client import OGMClient
-from ogm_agent_bridge.config import Settings
-from ogm_agent_bridge.mcp_server import create_server, health
+from ogm_mcp_skills.client import OGMClient
+from ogm_mcp_skills.config import Settings
+from ogm_mcp_skills.mcp_server import create_server, health
 
 
 @pytest.mark.asyncio

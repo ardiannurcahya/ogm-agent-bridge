@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from ogm_agent_bridge.errors import BridgeError
+from ogm_mcp_skills.errors import BridgeError
 
 
 def envelope(

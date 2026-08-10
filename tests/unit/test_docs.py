@@ -77,7 +77,7 @@ def test_environment_defaults_match_example_and_docs() -> None:
 
 def test_tool_docs_match_current_tools() -> None:
     tools_doc = (DOCS / "tools.md").read_text(encoding="utf-8")
-    server = (ROOT / "src/ogm_agent_bridge/mcp_server.py").read_text(encoding="utf-8")
+    server = (ROOT / "src/ogm_mcp_skills/mcp_server.py").read_text(encoding="utf-8")
     documented = set(re.findall(r"## `(ogm_[a-z_]+)`", tools_doc))
     registered = set(re.findall(r"async def (ogm_[a-z_]+)\(", server))
     assert documented == TOOLS

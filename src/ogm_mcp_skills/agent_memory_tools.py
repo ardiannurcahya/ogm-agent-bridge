@@ -8,10 +8,10 @@ import re
 from collections.abc import Mapping
 from typing import Any, TypeGuard
 
-from ogm_agent_bridge.client import OGMClient
-from ogm_agent_bridge.errors import ValidationError
-from ogm_agent_bridge.permissions import require_memory_read, require_memory_write
-from ogm_agent_bridge.responses import envelope
+from ogm_mcp_skills.client import OGMClient
+from ogm_mcp_skills.errors import ValidationError
+from ogm_mcp_skills.permissions import require_memory_read, require_memory_write
+from ogm_mcp_skills.responses import envelope
 
 _DOMAINS = frozenset({"engineering", "trading", "research", "operations", "custom"})
 _ATTEMPT_RESULTS = frozenset({"success", "failed", "partial"})

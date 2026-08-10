@@ -490,7 +490,7 @@ wheels = [
 ]
 
 [[package]]
-name = "ogm-agent-bridge"
+name = "ogm-mcp-skills"
 version = "0.1.7"
 source = { editable = "." }
 dependencies = [

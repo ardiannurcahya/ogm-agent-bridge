@@ -6,13 +6,17 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ### Added
 
+- Rebranded repository, package, and MCP server from `ogm-agent-bridge` to `ogm-mcp-skills`.
+- Production-grade `.agents/skills/ogm-mcp-skills/SKILL.md` for autonomous AI coding agents.
+- Codebase Knowledge Graph MCP tools (`ogm_search_code_symbols`, `ogm_get_code_call_graph`, `ogm_get_code_chunks`, `ogm_recall_code_memory`, `ogm_record_code_fix`, `ogm_sync_code_file`).
 - Ten Agent Memory MCP tools aligned with the OpenGraphMemory core `v0.1.0` source-level HTTP contract.
 - Contract coverage for MCP registration, HTTP routes, payloads, redirects, ambiguous writes, and secure uploads.
 
 ### Changed
 
+- Rebranded Python package to `ogm_mcp_skills` and CLI entrypoint to `ogm-mcp-skills` / `ogm-mcp`.
 - Default permission profile is `read-only`; write and curator capabilities require explicit opt-in.
-- All documented `uvx` harness examples pin `ogm-agent-bridge==0.1.7`.
+- All documented `uvx` harness examples pin `ogm-mcp-skills==0.1.7`.
 - Upload roots are explicit allowlists and are empty by default.
 
 ### Fixed

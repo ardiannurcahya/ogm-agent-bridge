@@ -1,11 +1,11 @@
 import httpx
 import pytest
 
-import ogm_agent_bridge.write_tools as write_tools
-from ogm_agent_bridge.client import OGMClient
-from ogm_agent_bridge.config import Settings
-from ogm_agent_bridge.errors import ValidationError
-from ogm_agent_bridge.tools import (
+import ogm_mcp_skills.write_tools as write_tools
+from ogm_mcp_skills.client import OGMClient
+from ogm_mcp_skills.config import Settings
+from ogm_mcp_skills.errors import ValidationError
+from ogm_mcp_skills.tools import (
     find_path,
     get_entity,
     get_evidence,
@@ -15,7 +15,7 @@ from ogm_agent_bridge.tools import (
     get_subgraph,
     search_entities,
 )
-from ogm_agent_bridge.write_tools import upload_document
+from ogm_mcp_skills.write_tools import upload_document
 
 
 @pytest.fixture
