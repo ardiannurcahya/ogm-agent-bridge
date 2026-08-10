@@ -140,3 +140,26 @@ The following require `memory-curator`; use them only after explicit review. Cor
 ## `ogm_memory_supersede_pattern`
 
 `POST /v1/agent-memory/patterns/{pattern_key}/supersede`, requires a distinct normalized pattern key.
+
+## Codebase Knowledge Graph & Memory Tools
+
+## `ogm_search_code_symbols`
+
+Search codebase entities (functions, classes, interfaces, structs) in a dataset by name, symbol kind, or file path.
+
+## `ogm_get_code_call_graph`
+
+Inspect callers, calls, and inheritance relationships for a code symbol entity.
+
+## `ogm_get_code_chunks`
+
+Fetch AST structural code chunks with exact start/end line bounds for a file/dataset.
+
+## `ogm_recall_code_memory`
+
+Recall past agent bugfixes and refactoring memories for a file or function signature.
+
+## `ogm_record_code_fix`
+
+Record an agent memory episode for a codebase bug fix or refactor.
+

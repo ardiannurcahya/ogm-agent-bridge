@@ -31,6 +31,13 @@ Alpha. PyPI releases are published from GitHub Actions on `v*` tags. Source inst
 - `ogm_memory_supersede_episode`
 - `ogm_memory_feedback_pattern`
 - `ogm_memory_supersede_pattern`
+- `ogm_search_code_symbols`
+- `ogm_get_code_call_graph`
+- `ogm_get_code_chunks`
+- `ogm_recall_code_memory`
+- `ogm_record_code_fix`
+- `ogm_sync_code_file`
+
 
 Read tools inspect PostgreSQL-authoritative graph and Agent Memory data. Agent Memory results are historical claims: inspect recorded evidence and verifiers before relying on them. `personal-safe` permits reviewed document upload and additive Agent Memory records; `memory-curator` additionally permits memory feedback and supersession. No delete, admin, project-create, relation-review, analytics-refresh, semantic-retrieval, or automatic conversation-ingestion tools exist.
 
