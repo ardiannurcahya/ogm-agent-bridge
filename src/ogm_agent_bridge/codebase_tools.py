@@ -7,7 +7,12 @@ from typing import Any
 
 from ogm_agent_bridge.client import OGMClient
 from ogm_agent_bridge.errors import ValidationError
-from ogm_agent_bridge.permissions import require_read, require_write
+from ogm_agent_bridge.permissions import (
+    require_memory_read,
+    require_memory_write,
+    require_read,
+    require_write,
+)
 from ogm_agent_bridge.responses import envelope
 from ogm_agent_bridge.tools import (
     _arguments,
@@ -70,7 +75,8 @@ async def recall_code_memory(
     client: OGMClient, arguments: Mapping[str, Any]
 ) -> dict[str, Any]:
     """Recall past agent bugfixes and refactoring memories for a code file or function."""
-    require_read("memory:read")
+    require_memory_read()
+
     _arguments(arguments, {"file_path", "function_name", "q", "limit"})
     query_str = (
         arguments.get("q")
@@ -89,10 +95,11 @@ async def recall_code_memory(
 
 
 async def record_code_fix(
-    client: OGMClient, arguments: Mapping[str, Any]
+    client: OGMClient, profile: str, arguments: Mapping[str, Any]
 ) -> dict[str, Any]:
     """Record an agent memory episode for a codebase bug fix or refactor."""
-    require_write("memory:write")
+    require_memory_write(profile, "agent-memory:write")
+
     _arguments(
         arguments,
         {
@@ -134,10 +141,11 @@ async def record_code_fix(
 
 
 async def sync_code_file(
-    client: OGMClient, arguments: Mapping[str, Any]
+    client: OGMClient, profile: str, arguments: Mapping[str, Any]
 ) -> dict[str, Any]:
     """Sync a single edited code file into the Knowledge Graph in real-time."""
-    require_write("documents:write")
+    require_write(profile, "documents:write")
+
     _arguments(arguments, {"dataset_id", "file_path", "code", "language"})
     dataset_id = _route_component(arguments.get("dataset_id"), "dataset_id", 1)
     file_path = _string(arguments, "file_path", 1, 500)

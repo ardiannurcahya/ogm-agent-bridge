@@ -65,7 +65,9 @@ async def test_server_exposes_explicit_read_tool_schemas() -> None:
         "ogm_get_code_chunks",
         "ogm_recall_code_memory",
         "ogm_record_code_fix",
+        "ogm_sync_code_file",
     }
+
     assert tools["ogm_search_entities"]["required"] == ["dataset_id", "q"]
     assert tools["ogm_find_path"]["required"] == [
         "dataset_id",

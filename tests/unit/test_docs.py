@@ -43,7 +43,9 @@ TOOLS = {
     "ogm_get_code_chunks",
     "ogm_recall_code_memory",
     "ogm_record_code_fix",
+    "ogm_sync_code_file",
 }
+
 ENV_DEFAULTS = {
     "OGM_TIMEOUT_SECONDS": "30",
     "OGM_MAX_RETRIES": "2",

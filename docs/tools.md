@@ -163,3 +163,8 @@ Recall past agent bugfixes and refactoring memories for a file or function signa
 
 Record an agent memory episode for a codebase bug fix or refactor.
 
+## `ogm_sync_code_file`
+
+Sync a single edited code file into the Knowledge Graph in real-time.
+
+

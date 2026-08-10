@@ -32,6 +32,7 @@ from ogm_agent_bridge.codebase_tools import (
     recall_code_memory,
     record_code_fix,
     search_code_symbols,
+    sync_code_file,
 )
 from ogm_agent_bridge.config import Settings, load_settings
 from ogm_agent_bridge.errors import BridgeError
@@ -430,6 +431,7 @@ def create_server(settings: Settings | None = None) -> FastMCP:
         return await _call(
             resolved_settings,
             record_code_fix,
+            resolved_settings.permission_profile,
             _defined(
                 file_path=file_path,
                 title=title,
@@ -438,6 +440,27 @@ def create_server(settings: Settings | None = None) -> FastMCP:
                 solution=solution,
                 function_name=function_name,
                 idempotency_key=idempotency_key,
+            ),
+        )
+
+    @server.tool(
+        description="Sync a single edited code file into the Knowledge Graph in real-time."
+    )
+    async def ogm_sync_code_file(
+        dataset_id: str,
+        file_path: str,
+        code: str,
+        language: str | None = None,
+    ) -> dict[str, Any]:
+        return await _call(
+            resolved_settings,
+            sync_code_file,
+            resolved_settings.permission_profile,
+            _defined(
+                dataset_id=dataset_id,
+                file_path=file_path,
+                code=code,
+                language=language,
             ),
         )
 
