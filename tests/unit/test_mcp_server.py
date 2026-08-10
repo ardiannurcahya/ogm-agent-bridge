@@ -60,6 +60,11 @@ async def test_server_exposes_explicit_read_tool_schemas() -> None:
         "ogm_memory_supersede_episode",
         "ogm_memory_feedback_pattern",
         "ogm_memory_supersede_pattern",
+        "ogm_search_code_symbols",
+        "ogm_get_code_call_graph",
+        "ogm_get_code_chunks",
+        "ogm_recall_code_memory",
+        "ogm_record_code_fix",
     }
     assert tools["ogm_search_entities"]["required"] == ["dataset_id", "q"]
     assert tools["ogm_find_path"]["required"] == [

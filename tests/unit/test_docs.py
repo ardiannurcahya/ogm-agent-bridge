@@ -38,6 +38,11 @@ TOOLS = {
     "ogm_memory_supersede_episode",
     "ogm_memory_feedback_pattern",
     "ogm_memory_supersede_pattern",
+    "ogm_search_code_symbols",
+    "ogm_get_code_call_graph",
+    "ogm_get_code_chunks",
+    "ogm_recall_code_memory",
+    "ogm_record_code_fix",
 }
 ENV_DEFAULTS = {
     "OGM_TIMEOUT_SECONDS": "30",

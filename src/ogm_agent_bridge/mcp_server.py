@@ -30,6 +30,13 @@ from ogm_agent_bridge.config import Settings, load_settings
 from ogm_agent_bridge.errors import BridgeError
 from ogm_agent_bridge.permissions import require_read
 from ogm_agent_bridge.responses import envelope, safe_error
+from ogm_agent_bridge.codebase_tools import (
+    get_code_call_graph,
+    get_code_chunks,
+    recall_code_memory,
+    record_code_fix,
+    search_code_symbols,
+)
 from ogm_agent_bridge.tools import (
     find_path,
     get_entity,
@@ -41,6 +48,7 @@ from ogm_agent_bridge.tools import (
     list_datasets,
     search_entities,
 )
+
 
 
 async def health(client: OGMClient) -> dict[str, Any]:
@@ -338,11 +346,98 @@ def create_server(settings: Settings | None = None) -> FastMCP:
             superseding_pattern_key,
         )
 
+    # --- Codebase Knowledge Graph & Codebase Memory Tools ---
+
+    @server.tool(description="Search codebase symbols (functions, classes, interfaces, structs) in a dataset.")
+    async def ogm_search_code_symbols(
+        dataset_id: str,
+        q: str,
+        kind: str | None = None,
+        language: str | None = None,
+        file_path: str | None = None,
+        limit: int | None = None,
+    ) -> dict[str, Any]:
+        return await _call(
+            resolved_settings,
+            search_code_symbols,
+            _defined(
+                dataset_id=dataset_id,
+                q=q,
+                kind=kind,
+                language=language,
+                file_path=file_path,
+                limit=limit,
+            ),
+        )
+
+    @server.tool(description="Inspect callers, calls, and inheritance for a code symbol.")
+    async def ogm_get_code_call_graph(
+        entity_id: str, limit: int | None = None
+    ) -> dict[str, Any]:
+        return await _call(
+            resolved_settings,
+            get_code_call_graph,
+            _defined(entity_id=entity_id, limit=limit),
+        )
+
+    @server.tool(description="Fetch AST structural code chunks with line bounds for a file/dataset.")
+    async def ogm_get_code_chunks(
+        dataset_id: str, file_path: str | None = None, limit: int | None = None
+    ) -> dict[str, Any]:
+        return await _call(
+            resolved_settings,
+            get_code_chunks,
+            _defined(dataset_id=dataset_id, file_path=file_path, limit=limit),
+        )
+
+    @server.tool(description="Recall past agent bugfixes and refactoring memories for a file or function.")
+    async def ogm_recall_code_memory(
+        file_path: str | None = None,
+        function_name: str | None = None,
+        q: str | None = None,
+        limit: int | None = None,
+    ) -> dict[str, Any]:
+        return await _call(
+            resolved_settings,
+            recall_code_memory,
+            _defined(
+                file_path=file_path,
+                function_name=function_name,
+                q=q,
+                limit=limit,
+            ),
+        )
+
+    @server.tool(description="Record an agent memory episode for a codebase bug fix or refactor.")
+    async def ogm_record_code_fix(
+        file_path: str,
+        title: str,
+        goal: str,
+        root_cause: str,
+        solution: str,
+        function_name: str | None = None,
+        idempotency_key: str | None = None,
+    ) -> dict[str, Any]:
+        return await _call(
+            resolved_settings,
+            record_code_fix,
+            _defined(
+                file_path=file_path,
+                title=title,
+                goal=goal,
+                root_cause=root_cause,
+                solution=solution,
+                function_name=function_name,
+                idempotency_key=idempotency_key,
+            ),
+        )
+
     # FastMCP derives schemas from signatures; forbid argument smuggling on every
     # public tool in addition to handler-level validation.
     for tool in server._tool_manager._tools.values():
         tool.parameters["additionalProperties"] = False
     return server
+
 
 
 async def _call(
