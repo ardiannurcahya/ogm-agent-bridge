@@ -9,7 +9,14 @@ from ogm_agent_bridge.client import OGMClient
 from ogm_agent_bridge.errors import ValidationError
 from ogm_agent_bridge.permissions import require_read, require_write
 from ogm_agent_bridge.responses import envelope
-from ogm_agent_bridge.tools import _arguments, _get, _integer, _optional_string, _route_component, _string
+from ogm_agent_bridge.tools import (
+    _arguments,
+    _get,
+    _integer,
+    _optional_string,
+    _route_component,
+    _string,
+)
 
 
 async def search_code_symbols(
@@ -65,9 +72,15 @@ async def recall_code_memory(
     """Recall past agent bugfixes and refactoring memories for a code file or function."""
     require_read("memory:read")
     _arguments(arguments, {"file_path", "function_name", "q", "limit"})
-    query_str = arguments.get("q") or arguments.get("file_path") or arguments.get("function_name")
+    query_str = (
+        arguments.get("q")
+        or arguments.get("file_path")
+        or arguments.get("function_name")
+    )
     if not query_str:
-        raise ValidationError("at least one of 'q', 'file_path', or 'function_name' is required")
+        raise ValidationError(
+            "at least one of 'q', 'file_path', or 'function_name' is required"
+        )
     params = {"q": str(query_str)[:200]}
     _optional_string(arguments, params, "file_path", 500)
     _integer(arguments, params, "limit", 1, 50)
@@ -139,4 +152,3 @@ async def sync_code_file(
     }
     response = await client.request("POST", "/v1/codebase/sync-file", json=payload)
     return envelope(response.json(), provenance={"project_id": client.project_id})
-

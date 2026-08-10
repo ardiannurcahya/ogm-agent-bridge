@@ -26,10 +26,6 @@ from ogm_agent_bridge.agent_memory_tools import (
     search as search_memory,
 )
 from ogm_agent_bridge.client import OGMClient
-from ogm_agent_bridge.config import Settings, load_settings
-from ogm_agent_bridge.errors import BridgeError
-from ogm_agent_bridge.permissions import require_read
-from ogm_agent_bridge.responses import envelope, safe_error
 from ogm_agent_bridge.codebase_tools import (
     get_code_call_graph,
     get_code_chunks,
@@ -37,6 +33,10 @@ from ogm_agent_bridge.codebase_tools import (
     record_code_fix,
     search_code_symbols,
 )
+from ogm_agent_bridge.config import Settings, load_settings
+from ogm_agent_bridge.errors import BridgeError
+from ogm_agent_bridge.permissions import require_read
+from ogm_agent_bridge.responses import envelope, safe_error
 from ogm_agent_bridge.tools import (
     find_path,
     get_entity,
@@ -48,7 +48,6 @@ from ogm_agent_bridge.tools import (
     list_datasets,
     search_entities,
 )
-
 
 
 async def health(client: OGMClient) -> dict[str, Any]:
@@ -348,7 +347,9 @@ def create_server(settings: Settings | None = None) -> FastMCP:
 
     # --- Codebase Knowledge Graph & Codebase Memory Tools ---
 
-    @server.tool(description="Search codebase symbols (functions, classes, interfaces, structs) in a dataset.")
+    @server.tool(
+        description="Search codebase symbols (functions, classes, interfaces, structs) in a dataset."
+    )
     async def ogm_search_code_symbols(
         dataset_id: str,
         q: str,
@@ -370,7 +371,9 @@ def create_server(settings: Settings | None = None) -> FastMCP:
             ),
         )
 
-    @server.tool(description="Inspect callers, calls, and inheritance for a code symbol.")
+    @server.tool(
+        description="Inspect callers, calls, and inheritance for a code symbol."
+    )
     async def ogm_get_code_call_graph(
         entity_id: str, limit: int | None = None
     ) -> dict[str, Any]:
@@ -380,7 +383,9 @@ def create_server(settings: Settings | None = None) -> FastMCP:
             _defined(entity_id=entity_id, limit=limit),
         )
 
-    @server.tool(description="Fetch AST structural code chunks with line bounds for a file/dataset.")
+    @server.tool(
+        description="Fetch AST structural code chunks with line bounds for a file/dataset."
+    )
     async def ogm_get_code_chunks(
         dataset_id: str, file_path: str | None = None, limit: int | None = None
     ) -> dict[str, Any]:
@@ -390,7 +395,9 @@ def create_server(settings: Settings | None = None) -> FastMCP:
             _defined(dataset_id=dataset_id, file_path=file_path, limit=limit),
         )
 
-    @server.tool(description="Recall past agent bugfixes and refactoring memories for a file or function.")
+    @server.tool(
+        description="Recall past agent bugfixes and refactoring memories for a file or function."
+    )
     async def ogm_recall_code_memory(
         file_path: str | None = None,
         function_name: str | None = None,
@@ -408,7 +415,9 @@ def create_server(settings: Settings | None = None) -> FastMCP:
             ),
         )
 
-    @server.tool(description="Record an agent memory episode for a codebase bug fix or refactor.")
+    @server.tool(
+        description="Record an agent memory episode for a codebase bug fix or refactor."
+    )
     async def ogm_record_code_fix(
         file_path: str,
         title: str,
@@ -437,7 +446,6 @@ def create_server(settings: Settings | None = None) -> FastMCP:
     for tool in server._tool_manager._tools.values():
         tool.parameters["additionalProperties"] = False
     return server
-
 
 
 async def _call(
