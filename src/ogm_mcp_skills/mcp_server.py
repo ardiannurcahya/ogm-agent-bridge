@@ -29,6 +29,7 @@ from ogm_mcp_skills.client import OGMClient
 from ogm_mcp_skills.codebase_tools import (
     get_code_call_graph,
     get_code_chunks,
+    index_codebase,
     recall_code_memory,
     record_code_fix,
     search_code_symbols,
@@ -461,6 +462,27 @@ def create_server(settings: Settings | None = None) -> FastMCP:
                 file_path=file_path,
                 code=code,
                 language=language,
+            ),
+        )
+
+    @server.tool(
+        description="Scan and extract an entire local codebase repository (directory) into an isolated OpenGraphMemory dataset in seconds with full AST call graphs."
+    )
+    async def ogm_index_codebase(
+        path: str,
+        dataset_id: str | None = None,
+        dataset_name: str | None = None,
+        description: str | None = None,
+    ) -> dict[str, Any]:
+        return await _call(
+            resolved_settings,
+            index_codebase,
+            resolved_settings.permission_profile,
+            _defined(
+                path=path,
+                dataset_id=dataset_id,
+                dataset_name=dataset_name,
+                description=description,
             ),
         )
 

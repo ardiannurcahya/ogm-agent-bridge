@@ -160,3 +160,87 @@ async def sync_code_file(
     }
     response = await client.request("POST", "/v1/codebase/sync-file", json=payload)
     return envelope(response.json(), provenance={"project_id": client.project_id})
+
+
+async def index_codebase(
+    client: OGMClient, profile: str, arguments: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Scan local codebase files and ingest them into OpenGraphMemory server via REST API."""
+    require_write(profile, "documents:write")
+
+    _arguments(arguments, {"path", "dataset_id", "dataset_name", "description"})
+    directory_path_str = _string(arguments, "path", 1, 1000)
+    
+    from pathlib import Path
+    dir_path = Path(directory_path_str)
+    if not dir_path.exists() or not dir_path.is_dir():
+        raise ValidationError(f"Local directory path '{directory_path_str}' does not exist or is not a directory.")
+
+    dir_stem = dir_path.name.lower().replace("-", "_").replace(" ", "_")
+    dataset_id = arguments.get("dataset_id") or f"ds_{dir_stem}"
+    dataset_name = arguments.get("dataset_name") or f"{dir_path.name} Codebase"
+    description = arguments.get("description") or f"AST Knowledge Graph for {dir_path.name}"
+
+    valid_exts = {".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py", ".go", ".rs", ".c", ".cpp", ".h", ".hpp"}
+    ignore_dirs = {".venv", "venv", ".git", "__pycache__", "build", "dist", "node_modules", "out", ".next", "generated", ".prisma"}
+
+    files_payload = []
+    total_loc = 0
+
+    for file_path in dir_path.rglob("*"):
+        if not file_path.is_file():
+            continue
+        if any(ign in file_path.parts for ign in ignore_dirs):
+            continue
+        if file_path.name.endswith(".min.js") or file_path.name.endswith(".d.ts"):
+            continue
+        if file_path.suffix.lower() not in valid_exts:
+            continue
+
+        try:
+            content = file_path.read_text(encoding="utf-8", errors="replace")
+            rel_path = str(file_path.relative_to(dir_path)).replace("\\", "/")
+            files_payload.append({
+                "file_path": rel_path,
+                "code": content,
+            })
+            total_loc += len(content.splitlines())
+        except Exception:
+            continue
+
+    if not files_payload:
+        raise ValidationError(f"No supported code files found in '{directory_path_str}'.")
+
+    # Ingest in chunks of 250 files to prevent oversized HTTP payloads
+    chunk_size = 250
+    total_entities = 0
+    total_relations = 0
+    communities_count = 0
+
+    for i in range(0, len(files_payload), chunk_size):
+        chunk = files_payload[i : i + chunk_size]
+        payload = {
+            "dataset_id": dataset_id,
+            "dataset_name": dataset_name,
+            "description": description,
+            "files": chunk,
+        }
+        response = await client.request("POST", "/v1/codebase/ingest", json=payload)
+        res_data = response.json()
+        total_entities = res_data.get("entities_inserted", total_entities)
+        total_relations = res_data.get("relations_inserted", total_relations)
+        communities_count = res_data.get("communities_count", communities_count)
+
+    result_summary = {
+        "dataset_id": dataset_id,
+        "dataset_name": dataset_name,
+        "files_processed": len(files_payload),
+        "loc_count": total_loc,
+        "entities_inserted": total_entities,
+        "relations_inserted": total_relations,
+        "communities_count": communities_count,
+        "graph_url": f"http://localhost:5173/graph",
+    }
+    return envelope(result_summary, provenance={"project_id": client.project_id})
+
+
