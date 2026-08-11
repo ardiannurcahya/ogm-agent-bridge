@@ -77,15 +77,16 @@ async def recall_code_memory(
     """Recall past agent bugfixes and refactoring memories for a code file or function."""
     require_memory_read()
 
-    _arguments(arguments, {"file_path", "function_name", "q", "limit"})
+    _arguments(arguments, {"file_path", "function_name", "q", "query", "limit"})
     query_str = (
         arguments.get("q")
+        or arguments.get("query")
         or arguments.get("file_path")
         or arguments.get("function_name")
     )
     if not query_str:
         raise ValidationError(
-            "at least one of 'q', 'file_path', or 'function_name' is required"
+            "at least one of 'q', 'query', 'file_path', or 'function_name' is required"
         )
     params = {"q": str(query_str)[:200]}
     _optional_string(arguments, params, "file_path", 500)
