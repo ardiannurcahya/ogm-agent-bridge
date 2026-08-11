@@ -87,16 +87,20 @@ async def create_episode(
         arguments,
         {
             "domain",
+            "type",
             "title",
             "goal",
             "problem_signature",
             "scope",
             "tags",
             "metadata",
+            "content",
+            "confidence",
             "evidence",
+            "idempotency_key",
         },
     )
-    body = {
+    body: dict[str, Any] = {
         "domain": _enum(arguments.get("domain"), "domain", _DOMAINS),
         "title": _string(arguments.get("title"), "title", 1, 255),
         "goal": _string(arguments.get("goal"), "goal", 1, 10_000),
@@ -108,6 +112,15 @@ async def create_episode(
         "metadata": _object(arguments.get("metadata", {}), "metadata"),
         "evidence": _evidence(arguments.get("evidence", [])),
     }
+    if "type" in arguments and arguments["type"] is not None:
+        body["type"] = str(arguments["type"])
+    if "confidence" in arguments and arguments["confidence"] is not None:
+        body["confidence"] = float(arguments["confidence"])
+    if "content" in arguments and arguments["content"] is not None:
+        body["content"] = _object(arguments["content"], "content")
+    if "idempotency_key" in arguments and arguments["idempotency_key"] is not None:
+        body["idempotency_key"] = str(arguments["idempotency_key"])
+
     return await _write(
         client, "/v1/agent-memory/episodes", "ogm_memory_create_episode", body
     )
