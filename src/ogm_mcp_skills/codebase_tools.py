@@ -171,19 +171,50 @@ async def index_codebase(
 
     _arguments(arguments, {"path", "dataset_id", "dataset_name", "description"})
     directory_path_str = _string(arguments, "path", 1, 1000)
-    
+
     from pathlib import Path
+
     dir_path = Path(directory_path_str)
     if not dir_path.exists() or not dir_path.is_dir():
-        raise ValidationError(f"Local directory path '{directory_path_str}' does not exist or is not a directory.")
+        raise ValidationError(
+            f"Local directory path '{directory_path_str}' does not exist or is not a directory."
+        )
 
     dir_stem = dir_path.name.lower().replace("-", "_").replace(" ", "_")
     dataset_id = arguments.get("dataset_id") or f"ds_{dir_stem}"
     dataset_name = arguments.get("dataset_name") or f"{dir_path.name} Codebase"
-    description = arguments.get("description") or f"AST Knowledge Graph for {dir_path.name}"
+    description = (
+        arguments.get("description") or f"AST Knowledge Graph for {dir_path.name}"
+    )
 
-    valid_exts = {".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py", ".go", ".rs", ".c", ".cpp", ".h", ".hpp"}
-    ignore_dirs = {".venv", "venv", ".git", "__pycache__", "build", "dist", "node_modules", "out", ".next", "generated", ".prisma"}
+    valid_exts = {
+        ".ts",
+        ".tsx",
+        ".js",
+        ".jsx",
+        ".mjs",
+        ".cjs",
+        ".py",
+        ".go",
+        ".rs",
+        ".c",
+        ".cpp",
+        ".h",
+        ".hpp",
+    }
+    ignore_dirs = {
+        ".venv",
+        "venv",
+        ".git",
+        "__pycache__",
+        "build",
+        "dist",
+        "node_modules",
+        "out",
+        ".next",
+        "generated",
+        ".prisma",
+    }
 
     files_payload = []
     total_loc = 0
@@ -201,16 +232,20 @@ async def index_codebase(
         try:
             content = file_path.read_text(encoding="utf-8", errors="replace")
             rel_path = str(file_path.relative_to(dir_path)).replace("\\", "/")
-            files_payload.append({
-                "file_path": rel_path,
-                "code": content,
-            })
+            files_payload.append(
+                {
+                    "file_path": rel_path,
+                    "code": content,
+                }
+            )
             total_loc += len(content.splitlines())
         except Exception:
             continue
 
     if not files_payload:
-        raise ValidationError(f"No supported code files found in '{directory_path_str}'.")
+        raise ValidationError(
+            f"No supported code files found in '{directory_path_str}'."
+        )
 
     # Ingest in chunks of 250 files to prevent oversized HTTP payloads
     chunk_size = 250
@@ -240,8 +275,6 @@ async def index_codebase(
         "entities_inserted": total_entities,
         "relations_inserted": total_relations,
         "communities_count": communities_count,
-        "graph_url": f"http://localhost:5173/graph",
+        "graph_url": "http://localhost:5173/graph",
     }
     return envelope(result_summary, provenance={"project_id": client.project_id})
-
-

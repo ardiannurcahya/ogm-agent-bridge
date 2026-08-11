@@ -44,6 +44,7 @@ TOOLS = {
     "ogm_recall_code_memory",
     "ogm_record_code_fix",
     "ogm_sync_code_file",
+    "ogm_index_codebase",
 }
 
 ENV_DEFAULTS = {

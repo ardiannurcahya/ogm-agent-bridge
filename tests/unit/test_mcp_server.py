@@ -66,6 +66,7 @@ async def test_server_exposes_explicit_read_tool_schemas() -> None:
         "ogm_recall_code_memory",
         "ogm_record_code_fix",
         "ogm_sync_code_file",
+        "ogm_index_codebase",
     }
 
     assert tools["ogm_search_entities"]["required"] == ["dataset_id", "q"]

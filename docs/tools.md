@@ -167,4 +167,8 @@ Record an agent memory episode for a codebase bug fix or refactor.
 
 Sync a single edited code file into the Knowledge Graph in real-time.
 
+## `ogm_index_codebase`
+
+Scan and batch ingest an entire local codebase repository into the Knowledge Graph via AST parsing.
+
 
