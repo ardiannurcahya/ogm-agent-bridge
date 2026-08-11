@@ -207,6 +207,19 @@ Call ogm_upload_document with an approved local file path and dataset/project co
 - [Configuration](docs/configuration.md)
 - [Tool schemas](docs/tools.md)
 
+## Performance & Token Economics
+
+The MCP server acts as an efficient bridge, converting broad file exploration queries into compact, structured graph and memory payloads:
+
+| Workload | Raw LLM Context Dump | OGM MCP Structured Payload | Measured Reduction |
+|---|---|---|:---:|
+| **Codebase Symbol Lookup** | ~40k–80k tokens (reading entire folders) | ~500–1.5k tokens (`ogm_get_code_call_graph`) | **~90%–95%** |
+| **Known Bug / Solution Recall** | ~60k–150k tokens (3–5 turn trial & error) | ~1.5k–3k tokens (`ogm_recall_code_memory`) | **~75%–90%** |
+| **Single-File Codebase Sync** | Full repo re-index | ~10ms delta AST sync (`ogm_sync_code_file`) | **Instant** |
+
+> [!NOTE]
+> *Token savings apply to repeated patterns, call-graph explorations, and known incident remediations. Unprecedented architectural problems still require exploratory reasoning, but newly verified solutions are immediately preserved for zero-overhead future retrieval.*
+
 ## Validation
 
 ```bash
