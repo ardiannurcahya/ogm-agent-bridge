@@ -2,6 +2,23 @@
 
 All notable changes follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased] - 2026-08-11
+
+### Added
+
+- `ogm_index_codebase` MCP tool for batch recursive AST symbol extraction and call-graph ingestion across codebases.
+- Token Economics & Benchmark Analysis documentation in `README.md` detailing token savings for recurring bugs and AST subgraphs.
+
+### Changed
+
+- Updated skill manifest and tool docs (`docs/tools.md`, `tests/test_docs.py`) to cover all 24 MCP tools.
+
+### Fixed
+
+- Synced MCP registration and unit test fixtures for codebase tools and verified all 33 unit tests pass.
+
+---
+
 ## [0.1.7] - 2026-08-02
 
 ### Added
