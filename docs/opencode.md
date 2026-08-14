@@ -1,6 +1,6 @@
 # OpenCode Setup
 
-Install from PyPI with `uv tool install ogm-mcp-skills`, or run directly with `uvx ogm-mcp-skills==0.2.1`.
+Install from PyPI with `uv tool install ogm-mcp-skills`, or run directly with `uvx ogm-mcp-skills==0.2.2`.
 
 Merge `examples/opencode/opencode.json.example` into trusted OpenCode config. Default example uses `uvx` and PyPI. For source development, replace command with `uv run --project /absolute/path/ogm-mcp-skills ogm-mcp-skills`.
 

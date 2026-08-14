@@ -52,7 +52,7 @@ uv tool install ogm-mcp-skills
 Or run without installing:
 
 ```bash
-uvx ogm-mcp-skills==0.2.1 --version
+uvx ogm-mcp-skills==0.2.2 --version
 ### Automated 1-Command Setup
 
 Automatically copy `SKILL.md` and merge MCP server configuration into your installed agent harness (Antigravity, Gemini CLI, Claude Desktop, Cursor, etc.):
@@ -107,7 +107,7 @@ Add MCP server config to project `.mcp.json`:
   "mcpServers": {
     "ogm": {
       "command": "uvx",
-      "args": ["ogm-mcp-skills==0.2.1"],
+      "args": ["ogm-mcp-skills==0.2.2"],
       "env": {
         "OGM_BASE_URL": "${OGM_BASE_URL}",
         "OGM_API_KEY": "${OGM_API_KEY}",
@@ -134,7 +134,7 @@ Add MCP server config to `opencode.json` or `opencode.jsonc`:
   "mcp": {
     "ogm": {
       "type": "local",
-      "command": ["uvx", "ogm-mcp-skills==0.2.1"],
+      "command": ["uvx", "ogm-mcp-skills==0.2.2"],
       "environment": {
         "OGM_BASE_URL": "{env:OGM_BASE_URL}",
         "OGM_API_KEY": "{env:OGM_API_KEY}",
@@ -158,7 +158,7 @@ mcp_servers:
   ogm:
     command: "uvx"
     args:
-      - "ogm-mcp-skills==0.2.1"
+      - "ogm-mcp-skills==0.2.2"
     env:
       OGM_BASE_URL: "${OGM_BASE_URL}"
       OGM_API_KEY: "${OGM_API_KEY}"

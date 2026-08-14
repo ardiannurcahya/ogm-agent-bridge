@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ogm-mcp-skills"
-version = "0.2.1"
+version = "0.2.2"
 description = "MCP Server and AI Agent Skills for OpenGraphMemory"
 readme = "README.md"
 requires-python = ">=3.11"
