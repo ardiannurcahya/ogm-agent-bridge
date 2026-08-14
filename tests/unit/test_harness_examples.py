@@ -43,7 +43,7 @@ def test_claude_example_is_valid_and_complete() -> None:
     server = example["mcpServers"]["ogm"]
 
     assert server["command"] == "uvx"
-    assert server["args"] == ["ogm-mcp-skills==0.1.9"]
+    assert server["args"] == ["ogm-mcp-skills==0.2.0"]
     assert set(server["env"]) == REQUIRED_ENV
     assert set(server["env"].values()) == {f"${{{name}}}" for name in REQUIRED_ENV}
 
@@ -54,7 +54,7 @@ def test_opencode_example_is_valid_and_complete() -> None:
 
     assert example["$schema"] == "https://opencode.ai/config.json"
     assert server["type"] == "local"
-    assert server["command"] == ["uvx", "ogm-mcp-skills==0.1.9"]
+    assert server["command"] == ["uvx", "ogm-mcp-skills==0.2.0"]
     assert server["enabled"] is True
     assert set(server["environment"]) == REQUIRED_ENV
     assert set(server["environment"].values()) == {
@@ -67,7 +67,7 @@ def test_hermes_example_declares_explicit_bridge_environment() -> None:
     server = example["mcp_servers"]["ogm"]
 
     assert server["command"] == "uvx"
-    assert server["args"] == ["ogm-mcp-skills==0.1.9"]
+    assert server["args"] == ["ogm-mcp-skills==0.2.0"]
     assert server["env"] == {name: f"${{{name}}}" for name in REQUIRED_ENV}
     assert server["timeout"] == 120
     assert server["connect_timeout"] == 60

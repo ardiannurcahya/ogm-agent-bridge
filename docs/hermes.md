@@ -1,6 +1,6 @@
 # Hermes Setup
 
-Install from PyPI with `uv tool install ogm-mcp-skills`, or run directly with `uvx ogm-mcp-skills==0.1.9`.
+Install from PyPI with `uv tool install ogm-mcp-skills`, or run directly with `uvx ogm-mcp-skills==0.2.0`.
 
 Merge `examples/hermes/config.yaml.example` under `mcp_servers`. Default example uses `uvx` and PyPI. For source development, replace command and args with `uv run --project /absolute/path/ogm-mcp-skills ogm-mcp-skills`.
 

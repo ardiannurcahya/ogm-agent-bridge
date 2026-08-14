@@ -5,7 +5,7 @@
       "type": "local",
       "command": [
         "uvx",
-        "ogm-mcp-skills==0.1.9"
+        "ogm-mcp-skills==0.2.0"
       ],
       "environment": {
         "OGM_BASE_URL": "{env:OGM_BASE_URL}",
