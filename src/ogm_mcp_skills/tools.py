@@ -20,9 +20,12 @@ async def list_datasets(client: OGMClient) -> dict[str, Any]:
 async def search_entities(
     client: OGMClient, arguments: Mapping[str, Any]
 ) -> dict[str, Any]:
-    _arguments(arguments, {"dataset_id", "q", "entity_type", "limit"})
+    _arguments(arguments, {"dataset_id", "q", "query", "entity_type", "limit"})
     dataset_id = _route_component(arguments.get("dataset_id"), "dataset_id", 1)
-    params = {"q": _string(arguments, "q", 1, 200)}
+    query_val = str(arguments.get("q") or arguments.get("query") or "")[:200]
+    if not query_val:
+        raise ValidationError("Either 'q' or 'query' parameter is required.")
+    params = {"q": query_val}
     _optional_string(arguments, params, "entity_type", 100)
     _integer(arguments, params, "limit", 1, 100)
     return await _get(
@@ -43,8 +46,9 @@ async def get_entity(client: OGMClient, entity_id: str) -> dict[str, Any]:
 async def get_neighbors(
     client: OGMClient, arguments: Mapping[str, Any]
 ) -> dict[str, Any]:
-    _arguments(arguments, {"entity_id", "limit"})
-    entity_id = _route_component(arguments.get("entity_id"), "entity_id", 1)
+    _arguments(arguments, {"entity_id", "symbol_id", "limit"})
+    raw_id = arguments.get("entity_id") or arguments.get("symbol_id")
+    entity_id = _route_component(raw_id, "entity_id", 1)
     params: dict[str, Any] = {}
     _integer(arguments, params, "limit", 1, 100)
     return await _get(
@@ -79,10 +83,11 @@ async def get_subgraph(
     client: OGMClient, arguments: Mapping[str, Any]
 ) -> dict[str, Any]:
     _arguments(
-        arguments, {"dataset_id", "entity_id", "depth", "node_limit", "relation_limit"}
+        arguments, {"dataset_id", "entity_id", "root_entity_id", "symbol_id", "depth", "node_limit", "relation_limit"}
     )
     dataset_id = _route_component(arguments.get("dataset_id"), "dataset_id", 1)
-    params = {"entity_id": _string(arguments, "entity_id", 1)}
+    raw_id = arguments.get("entity_id") or arguments.get("root_entity_id") or arguments.get("symbol_id")
+    params = {"entity_id": _string({"entity_id": raw_id}, "entity_id", 1)}
     _integer(arguments, params, "depth", 0, 2)
     _integer(arguments, params, "node_limit", 1, 200)
     _integer(arguments, params, "relation_limit", 1, 400)

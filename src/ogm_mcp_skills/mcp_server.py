@@ -70,17 +70,18 @@ def create_server(settings: Settings | None = None) -> FastMCP:
     async def ogm_list_datasets() -> dict[str, Any]:
         return await _call(resolved_settings, list_datasets)
 
-    @server.tool(description="Search supported graph entities in a dataset.")
+    @server.tool(description="Search graph entities by keyword in a dataset.")
     async def ogm_search_entities(
         dataset_id: str,
-        q: str,
+        q: str | None = None,
+        query: str | None = None,
         entity_type: str | None = None,
         limit: int | None = None,
     ) -> dict[str, Any]:
         return await _call(
             resolved_settings,
             search_entities,
-            _defined(dataset_id=dataset_id, q=q, entity_type=entity_type, limit=limit),
+            _defined(dataset_id=dataset_id, q=q, query=query, entity_type=entity_type, limit=limit),
         )
 
     @server.tool(description="Read one graph entity by ID.")
@@ -89,10 +90,12 @@ def create_server(settings: Settings | None = None) -> FastMCP:
 
     @server.tool(description="Read bounded graph neighbors for one entity.")
     async def ogm_get_neighbors(
-        entity_id: str, limit: int | None = None
+        entity_id: str | None = None,
+        symbol_id: str | None = None,
+        limit: int | None = None,
     ) -> dict[str, Any]:
         return await _call(
-            resolved_settings, get_neighbors, _defined(entity_id=entity_id, limit=limit)
+            resolved_settings, get_neighbors, _defined(entity_id=entity_id, symbol_id=symbol_id, limit=limit)
         )
 
     @server.tool(description="Find bounded graph path between two dataset entities.")
@@ -118,7 +121,9 @@ def create_server(settings: Settings | None = None) -> FastMCP:
     @server.tool(description="Read bounded graph subgraph around one entity.")
     async def ogm_get_subgraph(
         dataset_id: str,
-        entity_id: str,
+        entity_id: str | None = None,
+        root_entity_id: str | None = None,
+        symbol_id: str | None = None,
         depth: int | None = None,
         node_limit: int | None = None,
         relation_limit: int | None = None,
@@ -129,6 +134,8 @@ def create_server(settings: Settings | None = None) -> FastMCP:
             _defined(
                 dataset_id=dataset_id,
                 entity_id=entity_id,
+                root_entity_id=root_entity_id,
+                symbol_id=symbol_id,
                 depth=depth,
                 node_limit=node_limit,
                 relation_limit=relation_limit,
@@ -354,7 +361,8 @@ def create_server(settings: Settings | None = None) -> FastMCP:
     )
     async def ogm_search_code_symbols(
         dataset_id: str,
-        q: str,
+        q: str | None = None,
+        query: str | None = None,
         kind: str | None = None,
         language: str | None = None,
         file_path: str | None = None,
@@ -366,6 +374,7 @@ def create_server(settings: Settings | None = None) -> FastMCP:
             _defined(
                 dataset_id=dataset_id,
                 q=q,
+                query=query,
                 kind=kind,
                 language=language,
                 file_path=file_path,
@@ -377,12 +386,14 @@ def create_server(settings: Settings | None = None) -> FastMCP:
         description="Inspect callers, calls, and inheritance for a code symbol."
     )
     async def ogm_get_code_call_graph(
-        entity_id: str, limit: int | None = None
+        entity_id: str | None = None,
+        symbol_id: str | None = None,
+        limit: int | None = None,
     ) -> dict[str, Any]:
         return await _call(
             resolved_settings,
             get_code_call_graph,
-            _defined(entity_id=entity_id, limit=limit),
+            _defined(entity_id=entity_id, symbol_id=symbol_id, limit=limit),
         )
 
     @server.tool(

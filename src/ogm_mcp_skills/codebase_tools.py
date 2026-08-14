@@ -29,9 +29,12 @@ async def search_code_symbols(
 ) -> dict[str, Any]:
     """Search codebase entities (functions, classes, interfaces, structs) in a dataset."""
     require_read("graph:read")
-    _arguments(arguments, {"dataset_id", "q", "kind", "language", "file_path", "limit"})
+    _arguments(arguments, {"dataset_id", "q", "query", "kind", "language", "file_path", "limit"})
     dataset_id = _route_component(arguments.get("dataset_id"), "dataset_id", 1)
-    params = {"q": _string(arguments, "q", 1, 200)}
+    query_val = str(arguments.get("q") or arguments.get("query") or "")[:200]
+    if not query_val:
+        raise ValidationError("Either 'q' or 'query' parameter is required.")
+    params = {"q": query_val}
     _optional_string(arguments, params, "kind", 50)
     _optional_string(arguments, params, "language", 50)
     _optional_string(arguments, params, "file_path", 500)
@@ -47,8 +50,9 @@ async def get_code_call_graph(
 ) -> dict[str, Any]:
     """Inspect callers, calls, and inheritance for a code symbol."""
     require_read("graph:read")
-    _arguments(arguments, {"entity_id", "limit"})
-    entity_id = _route_component(arguments.get("entity_id"), "entity_id", 1)
+    _arguments(arguments, {"entity_id", "symbol_id", "limit"})
+    raw_id = arguments.get("entity_id") or arguments.get("symbol_id")
+    entity_id = _route_component(raw_id, "entity_id", 1)
     params: dict[str, Any] = {}
     _integer(arguments, params, "limit", 1, 100)
     return await _get(

@@ -69,13 +69,13 @@ async def test_server_exposes_explicit_read_tool_schemas() -> None:
         "ogm_index_codebase",
     }
 
-    assert tools["ogm_search_entities"]["required"] == ["dataset_id", "q"]
+    assert tools["ogm_search_entities"]["required"] == ["dataset_id"]
     assert tools["ogm_find_path"]["required"] == [
         "dataset_id",
         "source_entity_id",
         "target_entity_id",
     ]
-    assert tools["ogm_get_subgraph"]["required"] == ["dataset_id", "entity_id"]
+    assert tools["ogm_get_subgraph"]["required"] == ["dataset_id"]
     assert tools["ogm_get_relation_evidence"]["required"] == [
         "dataset_id",
         "relation_id",
