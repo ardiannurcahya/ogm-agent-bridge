@@ -53,12 +53,18 @@ Or run without installing:
 
 ```bash
 uvx ogm-mcp-skills==0.2.1 --version
-```
+### Automated 1-Command Setup
 
-`pipx` also works:
+Automatically copy `SKILL.md` and merge MCP server configuration into your installed agent harness (Antigravity, Gemini CLI, Claude Desktop, Cursor, etc.):
 
 ```bash
-pipx install ogm-mcp-skills
+ogm-mcp-skills setup
+```
+
+Or run directly without installing:
+
+```bash
+uvx ogm-mcp-skills setup
 ```
 
 For source development:
