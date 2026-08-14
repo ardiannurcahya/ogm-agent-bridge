@@ -386,7 +386,7 @@ def create_server(settings: Settings | None = None) -> FastMCP:
         )
 
     @server.tool(
-        description="Fetch AST structural code chunks with line bounds for a file/dataset."
+        description="Fetch codebase nodes, degree centrality rankings, and AST structural chunks for a dataset."
     )
     async def ogm_get_code_chunks(
         dataset_id: str, file_path: str | None = None, limit: int | None = None
