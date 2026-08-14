@@ -1,84 +1,118 @@
 ---
 name: ogm
 description: >-
-  OpenGraphMemory (OGM) Knowledge Graph, Codebase AST Search, and Persistent Agent Operational Memory.
-  Use to recall past bug fixes, search codebase symbols/call-graphs, sync AST code files, and inspect document knowledge graphs.
+  OpenGraphMemory (OGM) Knowledge Graph, Codebase AST Search, Document Extraction, and Persistent Agent Operational Memory.
+  Use to upload documents/specs, recall past bug fixes, search codebase symbols/call-graphs, sync AST code files, and manage persistent agent operational memories.
+license: MIT
+compatibility: Requires an OpenGraphMemory server and ogm-mcp-skills MCP server.
 ---
 
 # OpenGraphMemory (OGM) Skill
 
-This skill provides comprehensive, unambiguous operational instructions for AI Agents interacting with OpenGraphMemory (OGM).
+This skill provides a comprehensive, unambiguous, production-grade operational guide for AI Agents interacting with OpenGraphMemory (OGM). It covers all three core capabilities: **Document Knowledge Graphs**, **Codebase AST Call-Graphs**, and **Persistent Agent Operational Memory**.
 
 ---
 
-## 🎯 Codebase Ingestion Decision Tree (Multilingual Triggers: English & Indonesian)
+## 🎯 Task Intent Routing (English & Indonesian Triggers)
 
-When the user requests codebase extraction or indexing in **English** or **Indonesian**:
+Default to using OGM whenever a task involves reading documents, navigating codebases, or executing non-trivial engineering/operational work.
 
+### 📄 Category 1: Document Upload & Knowledge Extraction
+**English Triggers:**
+* *"Upload/index document spec.pdf or design.md into OGM"*
+* *"Extract knowledge graph from document X"*
+* *"Show evidence quotes for relation Y"*
+
+**Indonesian Triggers:**
+* *"Upload/index dokumen spec.pdf ke OGM"*
+* *"Extract knowledge graph dari dokumen design.md"*
+* *"Tampilkan bukti kutipan relasi Y"*
+
+**Action Protocol:**
+1. Identify dataset (`ogm_list_datasets`).
+2. Upload document using `ogm_upload_document`.
+3. Inspect relation evidence quotes using `ogm_get_evidence` or `ogm_get_relation_evidence`.
+
+---
+
+### 💻 Category 2: Codebase AST Call-Graphs & Centrality
 **English Triggers:**
 * *"Extract/index this codebase into OpenGraphMemory / OGM"*
-* *"Create a knowledge graph for repository X"*
 * *"Build AST call-graph for project Y"*
+* *"Which symbols are most connected / have top degree in repo Z?"*
 
 **Indonesian Triggers:**
 * *"Tolong extract codebase ini ke dalam knowledge graph menggunakan ogm"*
 * *"Index repo ini ke dalam OGM"*
-* *"Buat knowledge graph dari project X"*
+* *"Simbol apa yang paling banyak keterhubungannya / urutkan degree terbanyak"*
 
-The Agent **MUST** follow this exact 5-step protocol:
-
-```
-[User Request: "Index/Extract Codebase X"]
-         │
-         ▼
- 1. Check & Create Dedicated Dataset (`ds_<reponame>`) ──► NEVER mix repos into one dataset!
-         │
-         ▼
- 2. Batch Scan & Extract AST (TS/TSX/JS/JSX/Python/Go/Rust/C/C++)
-    - Call `ogm_index_codebase` ONESHOT tool.
-         │
-         ▼
- 3. Resolve Cross-File Symbol Calls (Global Symbol Resolution Table)
-    - Link function calls, class inheritance, and React component renders across files.
-         │
-         ▼
- 4. Trigger & Commit Louvain Graph Analytics (Hierarchical Levels 0, 1, 2)
-         │
-         ▼
- 5. Report Statistics to User with Direct UI Links:
-    - Total Files, LOC, AST Entities, Graph Edges, Louvain Clusters.
-    - URL: http://localhost:5000/graph?dataset=ds_<reponame>
-```
+**Action Protocol:**
+1. **Full Repo Onboarding (Oneshot)**: Call `ogm_index_codebase` with `dataset_id` and `path`.
+2. **Incremental Single-File Edit**: Call `ogm_sync_code_file` when editing 1 file during pair programming.
+3. **Symbol Search & Call Graphs**: Use `ogm_search_code_symbols` and `ogm_get_code_call_graph`.
+4. **Degree Centrality Ranking**: Use `ogm_get_code_chunks` to fetch hub nodes sorted by degree.
 
 ---
 
-## 🚨 Critical Agent Rules & Best Practices
+### 🧠 Category 3: Persistent Agent Operational Memory Workflow
 
-### Rule 1: Dataset Isolation (Zero Contamination)
-* **Always identify the target dataset first** using `ogm_list_datasets`.
-* Each repository **MUST** have its own dedicated `dataset_id`:
-  * `ds_ogm_core`: OpenGraphMemory Core Codebase (Python Backend, API, Worker).
-  * `ds_ogm_mcp_skills`: OGM MCP Skills Codebase (Python MCP Server).
-  * `ds_photobox_app`: Photobox App Codebase (Electron, React, TypeScript).
-  * Custom Repositories: Create or use `ds_<reponame>` specifically for that repository.
-* **NEVER** upload or sync files from Repository A into the dataset of Repository B.
+Use for bug fixes, errors, failed tests/builds, deployments, migrations, MCP/opencode config, GitHub PR/merge/push work, documentation changes, repository operations, incidents, research, trading, or any non-trivial engineering task: **search Agent Memory first**, **reorient when evidence changes**, then **record verified outcomes**. Skip only greetings, simple facts, and trivial one-line edits.
+
+Use the registered `ogm` MCP Agent Memory tools:
+- `ogm_memory_search` / `ogm_recall_code_memory`
+- `ogm_memory_list_episodes`
+- `ogm_memory_get_episode`
+- `ogm_memory_create_episode`
+- `ogm_memory_append_attempt`
+- `ogm_memory_record_outcome` / `ogm_record_code_fix`
+- `ogm_memory_feedback_episode`
+- `ogm_memory_supersede_episode`
+- `ogm_memory_feedback_pattern`
+- `ogm_memory_supersede_pattern`
 
 ---
 
-### Rule 2: Incremental Edit Sync vs Batch Ingestion
-* **FOR FULL REPO INITIAL ONBOARDING (ONESHOT)**:
-  * Call `ogm_index_codebase` with `dataset_id` and `path`. It parses the entire codebase (AST, symbols, relations, Louvain clusters) in 1 single tool call (< 5 seconds):
-  ```json
-  {
-    "dataset_id": "ds_ogm_lightweight",
-    "path": "C:/work/project/ogm-lightweight"
-  }
-  ```
-  *Tool: `ogm_index_codebase`*
+## 🧠 Agent Memory Detailed Protocol
 
-* **`ogm_sync_code_file` IS FOR INCREMENTAL SINGLE-FILE EDITS ONLY**:
-  * Use `ogm_sync_code_file` ONLY when you edit/modify 1 file during active pair programming.
-  * **DO NOT** call `ogm_sync_code_file` in a loop across dozens or hundreds of files to onboard a new codebase.
+### 1. Recall Before Work
+Before planning, editing, deploying, merging, pushing, or diagnosing, search Agent Memory when the request is any of the following:
+- A bug, regression, error message, flaky test, failed build, migration, deployment, incident, performance issue, or configuration problem.
+- A task involving MCP, opencode configuration, skills, agents, plugins, GitHub, PR review, branch merge, push, release, CI, Docker, object storage, database migrations, or remote VPS operations.
+- A task involving an unfamiliar subsystem, provider, dependency, repository, environment, operational runbook, or production-like runtime.
+- A non-trivial implementation, documentation update, design decision, or repository cleanup where previous verified solutions could shape the plan.
+
+Skip recall only for greetings, casual conversation, simple factual answers, obvious one-line edits, and tasks with no reusable technical context.
+
+**Recall Protocol:**
+1. Derive a concise diagnostic query from the user request, error text, failing component, or affected behavior.
+2. Derive a stable lowercase hyphenated `problem_signature` when the problem is concrete. Do not invent a signature for a vague request.
+3. Call `ogm_memory_search` or `ogm_recall_code_memory` with the diagnostic query, exact signature when known, repository/environment scope when known, and a limit of 3 to 5.
+4. Use returned memory as a hypothesis accelerator only. Verify recommendations against current code before acting. Never copy commands blindly.
+
+### 2. Reorient During Investigation
+Do not search on every failed command. Search again only when the initial hypothesis is disproven, a new root-cause candidate or subsystem becomes central, or a failed fix reveals a different failure mode.
+
+### 3. Persist After Work
+Record memory only when all of the following are true:
+- The task changed code, configuration, infrastructure, documentation, an operational decision, or produced a non-obvious investigation result.
+- There is a reusable diagnosis, decision, or workflow to retain.
+- At least one verifier exists: passing test, lint/typecheck/build, runtime health check, API response, or source evidence actually read.
+- The task reached `success`, `partial`, `failed`, or `cancelled`.
+
+### 4. Domain Selection
+Choose the `domain` for `ogm_memory_create_episode` from the task type:
+- `engineering`: code changes, tests, builds, deployments, migrations, infrastructure, MCP config, GitHub PR/merge/push work, CI, Docker, databases, and production debugging.
+- `research`: technical research, vendor/tool comparison, literature review, knowledge gathering, design exploration.
+- `trading`: market analysis, trading strategy, trade review, risk decisions, backtest investigation, portfolio workflow.
+- `operations`: incident response, runbooks, monitoring, backup/restore, maintenance windows, remote server administration, credential rotation.
+- `custom`: substantive work that does not fit other domains.
+
+### 5. Completion Protocol
+1. Search with `ogm_memory_search` before creating a record.
+2. Reuse a matching active episode when one exists; otherwise call `ogm_memory_create_episode`.
+3. Call `ogm_memory_append_attempt` once for the meaningful hypothesis and decisive actions.
+4. Call `ogm_memory_record_outcome` or `ogm_record_code_fix` when complete.
+5. Include actual verifiers: `test`, `build`, `ci`, `runtime`, `self_report`.
 
 ---
 
@@ -91,14 +125,20 @@ The Agent **MUST** follow this exact 5-step protocol:
 
 | Category | MCP Tool Name | Primary Parameters & Aliases | Purpose |
 | :--- | :--- | :--- | :--- |
+| **Document Upload** | `ogm_upload_document` | `dataset_id`, `path` (or `file_path`), `filename` | Upload PDF/MD/CSV document into Knowledge Graph |
+| **Evidence & Quotes** | `ogm_get_evidence` | `evidence_id` | Inspect exact quote backing graph relation |
+| **Relation Evidence** | `ogm_get_relation_evidence` | `dataset_id`, `relation_id` | Retrieve relation-specific quote evidence |
 | **Codebase Ingestion** | `ogm_index_codebase` | `dataset_id`, `path` (or `directory_path`) | **Oneshot** index full codebase repository into OGM |
 | **Codebase Sync** | `ogm_sync_code_file` | `dataset_id`, `file_path`, `code`, `language` | Live incremental AST sync for single edited file |
 | **Symbol Search** | `ogm_search_code_symbols` | `dataset_id`, `q` (or `query`), `kind`, `limit` | Search codebase functions, classes, structs |
 | **Call Graph** | `ogm_get_code_call_graph` | `entity_id` (or `symbol_id`), `limit` | Trace callers, calls, inheritance tree |
 | **Degree & AST Chunks** | `ogm_get_code_chunks` | `dataset_id`, `file_path`, `limit` | Fetch top-degree hub nodes & AST chunk bounds |
+| **Memory Search** | `ogm_memory_search` | `q` (or `query`), `problem_signature`, `repository` | Search verified agent operational memories |
 | **Memory Recall** | `ogm_recall_code_memory` | `q` (or `query` / `file_path` / `function_name`) | Recall prior bugfixes & refactoring lessons |
-| **Memory Record** | `ogm_record_code_fix` | `file_path`, `title`, `goal`, `root_cause`, `solution` | Record verified solution for future agent sessions |
-| **Document Upload** | `ogm_upload_document` | `dataset_id`, `path` (or `file_path`), `filename` | Upload PDF/MD/CSV document into Knowledge Graph |
+| **Memory Create** | `ogm_memory_create_episode` | `goal`, `problem_signature`, `domain` | Start operational problem-solving episode |
+| **Memory Attempt** | `ogm_memory_append_attempt` | `episode_id`, `hypothesis`, `action` | Log episode attempt & hypothesis |
+| **Memory Outcome** | `ogm_memory_record_outcome` | `episode_id`, `status`, `lesson` | Finalize episode outcome with verifiers |
+| **Record Code Fix** | `ogm_record_code_fix` | `file_path`, `title`, `goal`, `root_cause`, `solution` | Record verified solution for future agent sessions |
 | **List Datasets** | `ogm_list_datasets` | *(None)* | List all isolated repository datasets |
 | **Search Entities** | `ogm_search_entities` | `dataset_id`, `q` (or `query`), `entity_type` | Search canonical entities in Knowledge Graph |
 | **Get Entity** | `ogm_get_entity` | `entity_id` | Read entity details by ID |
@@ -106,90 +146,43 @@ The Agent **MUST** follow this exact 5-step protocol:
 | **Find Path** | `ogm_find_path` | `dataset_id`, `source_entity_id`, `target_entity_id` | Calculate shortest path between two entities |
 | **Get Subgraph** | `ogm_get_subgraph` | `dataset_id`, `entity_id` (or `root_entity_id`), `depth` | Extract clustered entity subgraphs |
 | **Get Graph** | `ogm_get_graph` | `dataset_id`, `limit`, `depth` | Read dataset graph overview |
-| **Evidence & Quotes** | `ogm_get_evidence` | `evidence_id` | Inspect exact quote backing graph relation |
-| **Relation Evidence** | `ogm_get_relation_evidence` | `dataset_id`, `relation_id` | Retrieve relation-specific quote evidence |
-| **Agent Memory Search** | `ogm_memory_search` | `q`, `problem_signature`, `repository` | Search verified agent operational memories |
-| **Create Episode** | `ogm_memory_create_episode` | `goal`, `problem_signature`, `repository` | Start operational problem-solving episode |
-| **Append Attempt** | `ogm_memory_append_attempt` | `episode_id`, `hypothesis`, `action` | Log episode attempt & hypothesis |
-| **Record Outcome** | `ogm_record_outcome` | `episode_id`, `status`, `lesson` | Finalize episode outcome with verifiers |
 
 ---
 
 ## 🛠️ MCP Tool Workflows & Examples
 
-### 1. Codebase Navigation & Call Graph
-* **Oneshot Index Full Codebase Repository**:
-  ```json
-  {
-    "dataset_id": "ds_ogm_lightweight",
-    "path": "C:/work/project/ogm-lightweight"
-  }
-  ```
-  *Tool: `ogm_index_codebase`*
+### 1. Document Upload Workflow
+```json
+{
+  "dataset_id": "ds_ogm_core",
+  "path": "C:/docs/architecture_spec.md"
+}
+```
+*Tool: `ogm_upload_document`*
 
-* **Search Symbols**:
-  ```json
-  {
-    "dataset_id": "ds_ogm_core",
-    "query": "CodeExtractor",
-    "kind": "class",
-    "limit": 10
-  }
-  ```
-  *Tool: `ogm_search_code_symbols`*
+### 2. Codebase Oneshot Indexing
+```json
+{
+  "dataset_id": "ds_ogm_lightweight",
+  "path": "C:/work/project/ogm-lightweight"
+}
+```
+*Tool: `ogm_index_codebase`*
 
-* **Trace Call Hierarchy & Call Graph**:
-  ```json
-  {
-    "dataset_id": "ds_ogm_core",
-    "symbol_id": "code_python_CodeExtractor_...",
-    "direction": "both",
-    "max_depth": 2
-  }
-  ```
-  *Tool: `ogm_get_code_call_graph`*
+### 3. Degree Ranking Query
+```json
+{
+  "dataset_id": "ds_photobox_app",
+  "limit": 50
+}
+```
+*Tool: `ogm_get_code_chunks`*
 
-* **Fetch AST Structural Chunks & Degree Centrality**:
-  *Tool: `ogm_get_code_chunks`* (retrieves structural nodes sorted by **degree centrality**, containing `degree`, `weighted_degree`, `importance`, `community_id`, and `canonical_name`).
-
-* **Query Degree Ranking (Most Connected Hub Symbols)**:
-  When asked to rank or list nodes by degree centrality (in English or Indonesian, e.g., *"urutkan degree terbanyak"* / *"which symbols are most connected"*), use `ogm_get_code_chunks`:
-  ```json
-  {
-    "dataset_id": "ds_photobox_app",
-    "limit": 50
-  }
-  ```
-
----
-
-### 2. Operational Agent Memory (Bug Fixes & Lessons)
-* **Recall Prior Fixes Before Solving a Bug**:
-  * Always run `ogm_recall_code_memory` before attempting complex refactors or debugging tricky errors:
-  ```json
-  {
-    "query": "socket.gaierror redis localhost connection error",
-    "limit": 5
-  }
-  ```
-* **Record Solution Pattern After Successful Fix**:
-  * When a bug is fixed and verified, record it so future agent sessions remember the solution:
-  ```json
-  {
-    "task_description": "Fix Redis host connection on Windows native host",
-    "problem_signature": "socket.gaierror Errno 11001 resolving redis hostname",
-    "root_cause": "Docker service name 'redis' was used instead of 127.0.0.1 on Windows host",
-    "code_diff": "- REDIS_HOST=redis\n+ REDIS_HOST=127.0.0.1",
-    "outcome": "useful",
-    "dataset_id": "ds_ogm_core"
-  }
-  ```
-  *Tool: `ogm_record_code_fix`*
-
----
-
-### 3. Knowledge Graph Entities & Evidence
-* `ogm_search_entities`: Search canonical entities across datasets.
-* `ogm_get_neighbors`: Retrieve immediate 1-hop semantic connections.
-* `ogm_find_path`: Find shortest relational paths between two symbols or entities.
-* `ogm_get_subgraph`: Extract clustered entity subgraphs for GraphRAG context injection.
+### 4. Memory Recall Before Work
+```json
+{
+  "query": "socket.gaierror redis localhost connection error",
+  "limit": 5
+}
+```
+*Tool: `ogm_memory_search` / `ogm_recall_code_memory`*
