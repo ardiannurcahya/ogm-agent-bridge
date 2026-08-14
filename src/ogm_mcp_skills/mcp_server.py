@@ -469,7 +469,8 @@ def create_server(settings: Settings | None = None) -> FastMCP:
         description="Scan and extract an entire local codebase repository (directory) into an isolated OpenGraphMemory dataset in seconds with full AST call graphs."
     )
     async def ogm_index_codebase(
-        path: str,
+        path: str | None = None,
+        directory_path: str | None = None,
         dataset_id: str | None = None,
         dataset_name: str | None = None,
         description: str | None = None,
@@ -480,6 +481,7 @@ def create_server(settings: Settings | None = None) -> FastMCP:
             resolved_settings.permission_profile,
             _defined(
                 path=path,
+                directory_path=directory_path,
                 dataset_id=dataset_id,
                 dataset_name=dataset_name,
                 description=description,

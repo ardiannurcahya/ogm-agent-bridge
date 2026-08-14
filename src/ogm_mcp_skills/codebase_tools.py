@@ -169,8 +169,12 @@ async def index_codebase(
     """Scan local codebase files and ingest them into OpenGraphMemory server via REST API."""
     require_write(profile, "documents:write")
 
-    _arguments(arguments, {"path", "dataset_id", "dataset_name", "description"})
-    directory_path_str = _string(arguments, "path", 1, 1000)
+    _arguments(arguments, {"path", "directory_path", "dataset_id", "dataset_name", "description"})
+    directory_path_str = str(
+        arguments.get("path") or arguments.get("directory_path") or ""
+    )
+    if not directory_path_str:
+        raise ValidationError("Either 'path' or 'directory_path' argument is required.")
 
     from pathlib import Path
 
