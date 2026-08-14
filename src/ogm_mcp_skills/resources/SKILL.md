@@ -11,9 +11,16 @@ This skill provides comprehensive, unambiguous operational instructions for AI A
 
 ---
 
-## 🎯 Codebase Ingestion Decision Tree (When User Requests Code Extraction)
+## 🎯 Codebase Ingestion Decision Tree (Multilingual Triggers: English & Indonesian)
 
-When the user says:
+When the user requests codebase extraction or indexing in **English** or **Indonesian**:
+
+**English Triggers:**
+* *"Extract/index this codebase into OpenGraphMemory / OGM"*
+* *"Create a knowledge graph for repository X"*
+* *"Build AST call-graph for project Y"*
+
+**Indonesian Triggers:**
 * *"Tolong extract codebase ini ke dalam knowledge graph menggunakan ogm"*
 * *"Index repo ini ke dalam OGM"*
 * *"Buat knowledge graph dari project X"*
@@ -21,18 +28,18 @@ When the user says:
 The Agent **MUST** follow this exact 5-step protocol:
 
 ```
-[User: "Index/Extract Codebase X"]
+[User Request: "Index/Extract Codebase X"]
          │
          ▼
  1. Check & Create Dedicated Dataset (`ds_<reponame>`) ──► NEVER mix repos into one dataset!
          │
          ▼
- 2. Batch Scan & Extract AST (TS/TSX/JS/JSX/Python/Go/Rust)
-    - Extract Class, Function, Interface, Method, Import, JSX Component Tags.
+ 2. Batch Scan & Extract AST (TS/TSX/JS/JSX/Python/Go/Rust/C/C++)
+    - Call `ogm_index_codebase` ONESHOT tool.
          │
          ▼
  3. Resolve Cross-File Symbol Calls (Global Symbol Resolution Table)
-    - Link function calls and React component renders across files.
+    - Link function calls, class inheritance, and React component renders across files.
          │
          ▼
  4. Trigger & Commit Louvain Graph Analytics (Hierarchical Levels 0, 1, 2)
@@ -53,7 +60,7 @@ The Agent **MUST** follow this exact 5-step protocol:
   * `ds_ogm_core`: OpenGraphMemory Core Codebase (Python Backend, API, Worker).
   * `ds_ogm_mcp_skills`: OGM MCP Skills Codebase (Python MCP Server).
   * `ds_photobox_app`: Photobox App Codebase (Electron, React, TypeScript).
-  * Custom Repos: Create or use `ds_<reponame>` specifically for that repository.
+  * Custom Repositories: Create or use `ds_<reponame>` specifically for that repository.
 * **NEVER** upload or sync files from Repository A into the dataset of Repository B.
 
 ---
@@ -70,8 +77,41 @@ The Agent **MUST** follow this exact 5-step protocol:
   *Tool: `ogm_index_codebase`*
 
 * **`ogm_sync_code_file` IS FOR INCREMENTAL SINGLE-FILE EDITS ONLY**:
-  * Use `ogm_sync_code_file` ONLY when you edit/modify 1 file during pair programming.
+  * Use `ogm_sync_code_file` ONLY when you edit/modify 1 file during active pair programming.
   * **DO NOT** call `ogm_sync_code_file` in a loop across dozens or hundreds of files to onboard a new codebase.
+
+---
+
+## 🛠️ Complete 21-Tool MCP Cheat Sheet & Zero-Loop Rules
+
+### Rule 3: Zero-Loop Policy & Direct Tool Execution
+* **NEVER** run `curl` commands to `/v1/...` API endpoints manually.
+* **NEVER** inspect OpenAPI schemas (`openapi.json`) or run custom regex/Node.js fallback scripts.
+* **ALWAYS** call the matching `ogm_*` MCP tool directly in 1 single tool call (*oneshot*).
+
+| Category | MCP Tool Name | Primary Parameters & Aliases | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Codebase Ingestion** | `ogm_index_codebase` | `dataset_id`, `path` (or `directory_path`) | **Oneshot** index full codebase repository into OGM |
+| **Codebase Sync** | `ogm_sync_code_file` | `dataset_id`, `file_path`, `code`, `language` | Live incremental AST sync for single edited file |
+| **Symbol Search** | `ogm_search_code_symbols` | `dataset_id`, `q` (or `query`), `kind`, `limit` | Search codebase functions, classes, structs |
+| **Call Graph** | `ogm_get_code_call_graph` | `entity_id` (or `symbol_id`), `limit` | Trace callers, calls, inheritance tree |
+| **Degree & AST Chunks** | `ogm_get_code_chunks` | `dataset_id`, `file_path`, `limit` | Fetch top-degree hub nodes & AST chunk bounds |
+| **Memory Recall** | `ogm_recall_code_memory` | `q` (or `query` / `file_path` / `function_name`) | Recall prior bugfixes & refactoring lessons |
+| **Memory Record** | `ogm_record_code_fix` | `file_path`, `title`, `goal`, `root_cause`, `solution` | Record verified solution for future agent sessions |
+| **Document Upload** | `ogm_upload_document` | `dataset_id`, `path` (or `file_path`), `filename` | Upload PDF/MD/CSV document into Knowledge Graph |
+| **List Datasets** | `ogm_list_datasets` | *(None)* | List all isolated repository datasets |
+| **Search Entities** | `ogm_search_entities` | `dataset_id`, `q` (or `query`), `entity_type` | Search canonical entities in Knowledge Graph |
+| **Get Entity** | `ogm_get_entity` | `entity_id` | Read entity details by ID |
+| **Get Neighbors** | `ogm_get_neighbors` | `entity_id` (or `symbol_id`), `limit` | Read 1-hop graph connections |
+| **Find Path** | `ogm_find_path` | `dataset_id`, `source_entity_id`, `target_entity_id` | Calculate shortest path between two entities |
+| **Get Subgraph** | `ogm_get_subgraph` | `dataset_id`, `entity_id` (or `root_entity_id`), `depth` | Extract clustered entity subgraphs |
+| **Get Graph** | `ogm_get_graph` | `dataset_id`, `limit`, `depth` | Read dataset graph overview |
+| **Evidence & Quotes** | `ogm_get_evidence` | `evidence_id` | Inspect exact quote backing graph relation |
+| **Relation Evidence** | `ogm_get_relation_evidence` | `dataset_id`, `relation_id` | Retrieve relation-specific quote evidence |
+| **Agent Memory Search** | `ogm_memory_search` | `q`, `problem_signature`, `repository` | Search verified agent operational memories |
+| **Create Episode** | `ogm_memory_create_episode` | `goal`, `problem_signature`, `repository` | Start operational problem-solving episode |
+| **Append Attempt** | `ogm_memory_append_attempt` | `episode_id`, `hypothesis`, `action` | Log episode attempt & hypothesis |
+| **Record Outcome** | `ogm_record_outcome` | `episode_id`, `status`, `lesson` | Finalize episode outcome with verifiers |
 
 ---
 
@@ -113,7 +153,7 @@ The Agent **MUST** follow this exact 5-step protocol:
   *Tool: `ogm_get_code_chunks`* (retrieves structural nodes sorted by **degree centrality**, containing `degree`, `weighted_degree`, `importance`, `community_id`, and `canonical_name`).
 
 * **Query Degree Ranking (Most Connected Hub Symbols)**:
-  When asked to rank or list nodes by degree centrality, use `ogm_get_code_chunks`:
+  When asked to rank or list nodes by degree centrality (in English or Indonesian, e.g., *"urutkan degree terbanyak"* / *"which symbols are most connected"*), use `ogm_get_code_chunks`:
   ```json
   {
     "dataset_id": "ds_photobox_app",
@@ -122,36 +162,6 @@ The Agent **MUST** follow this exact 5-step protocol:
   ```
 
 ---
-## 🛠️ Complete 21-Tool MCP Cheat Sheet & Zero-Loop Rules
-
-### Rule 3: Zero-Loop Policy & Direct Tool Execution
-* **NEVER** run `curl` to `/v1/...` API endpoints manually.
-* **NEVER** inspect OpenAPI schemas (`openapi.json`) or run custom regex/Node.js fallback scripts.
-* **ALWAYS** call the matching `ogm_*` MCP tool directly in 1 single tool call (*oneshot*).
-
-| Category | MCP Tool Name | Primary Parameters & Aliases | Purpose |
-| :--- | :--- | :--- | :--- |
-| **Codebase Ingestion** | `ogm_index_codebase` | `dataset_id`, `path` (or `directory_path`) | **Oneshot** index full codebase repository into OGM |
-| **Codebase Sync** | `ogm_sync_code_file` | `dataset_id`, `file_path`, `code`, `language` | Live incremental AST sync for single edited file |
-| **Symbol Search** | `ogm_search_code_symbols` | `dataset_id`, `q` (or `query`), `kind`, `limit` | Search codebase functions, classes, structs |
-| **Call Graph** | `ogm_get_code_call_graph` | `entity_id` (or `symbol_id`), `limit` | Trace callers, calls, inheritance tree |
-| **Degree & AST Chunks** | `ogm_get_code_chunks` | `dataset_id`, `file_path`, `limit` | Fetch top-degree hub nodes & AST chunk bounds |
-| **Memory Recall** | `ogm_recall_code_memory` | `q` (or `query` / `file_path` / `function_name`) | Recall prior bugfixes & refactoring lessons |
-| **Memory Record** | `ogm_record_code_fix` | `file_path`, `title`, `goal`, `root_cause`, `solution` | Record verified solution for future agent sessions |
-| **Document Upload** | `ogm_upload_document` | `dataset_id`, `path` (or `file_path`), `filename` | Upload PDF/MD/CSV document into Knowledge Graph |
-| **List Datasets** | `ogm_list_datasets` | *(None)* | List all isolated repository datasets |
-| **Search Entities** | `ogm_search_entities` | `dataset_id`, `q` (or `query`), `entity_type` | Search canonical entities in Knowledge Graph |
-| **Get Entity** | `ogm_get_entity` | `entity_id` | Read entity details by ID |
-| **Get Neighbors** | `ogm_get_neighbors` | `entity_id` (or `symbol_id`), `limit` | Read 1-hop graph connections |
-| **Find Path** | `ogm_find_path` | `dataset_id`, `source_entity_id`, `target_entity_id` | Calculate shortest path between two entities |
-| **Get Subgraph** | `ogm_get_subgraph` | `dataset_id`, `entity_id` (or `root_entity_id`), `depth` | Extract clustered entity subgraphs |
-| **Get Graph** | `ogm_get_graph` | `dataset_id`, `limit`, `depth` | Read dataset graph overview |
-| **Evidence & Quotes** | `ogm_get_evidence` | `evidence_id` | Inspect exact quote backing graph relation |
-| **Relation Evidence** | `ogm_get_relation_evidence` | `dataset_id`, `relation_id` | Retrieve relation-specific quote evidence |
-| **Agent Memory Search** | `ogm_memory_search` | `q`, `problem_signature`, `repository` | Search verified agent operational memories |
-| **Create Episode** | `ogm_memory_create_episode` | `goal`, `problem_signature`, `repository` | Start operational problem-solving episode |
-| **Append Attempt** | `ogm_memory_append_attempt` | `episode_id`, `hypothesis`, `action` | Log episode attempt & hypothesis |
-| **Record Outcome** | `ogm_memory_record_outcome` | `episode_id`, `status`, `lesson` | Finalize episode outcome with verifiers |
 
 ### 2. Operational Agent Memory (Bug Fixes & Lessons)
 * **Recall Prior Fixes Before Solving a Bug**:
