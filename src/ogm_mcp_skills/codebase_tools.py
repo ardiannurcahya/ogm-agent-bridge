@@ -231,6 +231,8 @@ async def index_codebase(
 
         try:
             content = file_path.read_text(encoding="utf-8", errors="replace")
+            if not content:
+                content = "\n"
             rel_path = str(file_path.relative_to(dir_path)).replace("\\", "/")
             files_payload.append(
                 {
