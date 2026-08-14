@@ -59,7 +59,7 @@ async def get_code_call_graph(
 async def get_code_chunks(
     client: OGMClient, arguments: Mapping[str, Any]
 ) -> dict[str, Any]:
-    """Fetch AST structural code chunks with line bounds for a dataset/document."""
+    """Fetch codebase nodes, degree centrality rankings, and AST structural chunks for a dataset."""
     require_read("graph:read")
     _arguments(arguments, {"dataset_id", "file_path", "limit"})
     dataset_id = _route_component(arguments.get("dataset_id"), "dataset_id", 1)
