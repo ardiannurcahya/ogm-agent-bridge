@@ -277,6 +277,6 @@ async def index_codebase(
         "entities_inserted": total_entities,
         "relations_inserted": total_relations,
         "communities_count": communities_count,
-        "graph_url": "http://localhost:5173/graph",
+        "graph_url": "http://localhost:5000/graph",
     }
     return envelope(result_summary, provenance={"project_id": client.project_id})
