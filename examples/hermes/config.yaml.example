@@ -2,7 +2,7 @@ mcp_servers:
   ogm:
     command: "uvx"
     args:
-      - "ogm-mcp-skills==0.1.8"
+      - "ogm-mcp-skills==0.1.9"
     env:
       OGM_BASE_URL: "${OGM_BASE_URL}"
       OGM_API_KEY: "${OGM_API_KEY}"

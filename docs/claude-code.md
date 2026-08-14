@@ -1,6 +1,6 @@
 # Claude Code Setup
 
-Install from PyPI with `uv tool install ogm-mcp-skills`, or run directly with `uvx ogm-mcp-skills==0.1.8`.
+Install from PyPI with `uv tool install ogm-mcp-skills`, or run directly with `uvx ogm-mcp-skills==0.1.9`.
 
 Copy `examples/claude-code/.mcp.json.example` to trusted project `.mcp.json`. Default example uses `uvx` and PyPI. For source development, replace command and args with `uv run --project /absolute/path/ogm-mcp-skills ogm-mcp-skills`.
 

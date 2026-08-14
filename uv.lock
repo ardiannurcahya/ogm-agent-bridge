@@ -491,7 +491,7 @@ wheels = [
 
 [[package]]
 name = "ogm-mcp-skills"
-version = "0.1.8"
+version = "0.1.9"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },
