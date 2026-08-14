@@ -83,10 +83,23 @@ async def get_subgraph(
     client: OGMClient, arguments: Mapping[str, Any]
 ) -> dict[str, Any]:
     _arguments(
-        arguments, {"dataset_id", "entity_id", "root_entity_id", "symbol_id", "depth", "node_limit", "relation_limit"}
+        arguments,
+        {
+            "dataset_id",
+            "entity_id",
+            "root_entity_id",
+            "symbol_id",
+            "depth",
+            "node_limit",
+            "relation_limit",
+        },
     )
     dataset_id = _route_component(arguments.get("dataset_id"), "dataset_id", 1)
-    raw_id = arguments.get("entity_id") or arguments.get("root_entity_id") or arguments.get("symbol_id")
+    raw_id = (
+        arguments.get("entity_id")
+        or arguments.get("root_entity_id")
+        or arguments.get("symbol_id")
+    )
     params = {"entity_id": _string({"entity_id": raw_id}, "entity_id", 1)}
     _integer(arguments, params, "depth", 0, 2)
     _integer(arguments, params, "node_limit", 1, 200)

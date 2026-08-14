@@ -81,7 +81,13 @@ def create_server(settings: Settings | None = None) -> FastMCP:
         return await _call(
             resolved_settings,
             search_entities,
-            _defined(dataset_id=dataset_id, q=q, query=query, entity_type=entity_type, limit=limit),
+            _defined(
+                dataset_id=dataset_id,
+                q=q,
+                query=query,
+                entity_type=entity_type,
+                limit=limit,
+            ),
         )
 
     @server.tool(description="Read one graph entity by ID.")
@@ -95,7 +101,9 @@ def create_server(settings: Settings | None = None) -> FastMCP:
         limit: int | None = None,
     ) -> dict[str, Any]:
         return await _call(
-            resolved_settings, get_neighbors, _defined(entity_id=entity_id, symbol_id=symbol_id, limit=limit)
+            resolved_settings,
+            get_neighbors,
+            _defined(entity_id=entity_id, symbol_id=symbol_id, limit=limit),
         )
 
     @server.tool(description="Find bounded graph path between two dataset entities.")

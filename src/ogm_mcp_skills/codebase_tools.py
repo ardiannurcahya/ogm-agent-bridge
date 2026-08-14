@@ -29,7 +29,10 @@ async def search_code_symbols(
 ) -> dict[str, Any]:
     """Search codebase entities (functions, classes, interfaces, structs) in a dataset."""
     require_read("graph:read")
-    _arguments(arguments, {"dataset_id", "q", "query", "kind", "language", "file_path", "limit"})
+    _arguments(
+        arguments,
+        {"dataset_id", "q", "query", "kind", "language", "file_path", "limit"},
+    )
     dataset_id = _route_component(arguments.get("dataset_id"), "dataset_id", 1)
     query_val = str(arguments.get("q") or arguments.get("query") or "")[:200]
     if not query_val:
@@ -173,7 +176,10 @@ async def index_codebase(
     """Scan local codebase files and ingest them into OpenGraphMemory server via REST API."""
     require_write(profile, "documents:write")
 
-    _arguments(arguments, {"path", "directory_path", "dataset_id", "dataset_name", "description"})
+    _arguments(
+        arguments,
+        {"path", "directory_path", "dataset_id", "dataset_name", "description"},
+    )
     directory_path_str = str(
         arguments.get("path") or arguments.get("directory_path") or ""
     )
