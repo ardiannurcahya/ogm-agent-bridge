@@ -3,7 +3,7 @@
     "ogm": {
       "command": "uvx",
       "args": [
-        "ogm-mcp-skills==0.2.0"
+        "ogm-mcp-skills==0.2.1"
       ],
       "env": {
         "OGM_BASE_URL": "${OGM_BASE_URL}",

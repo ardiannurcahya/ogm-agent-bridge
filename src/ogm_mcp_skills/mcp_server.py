@@ -538,7 +538,23 @@ def _tool_error(error: Exception) -> dict[str, Any]:
 
 
 def main() -> None:
-    if "--version" in sys.argv[1:]:
+    args = sys.argv[1:]
+    if "--version" in args:
         print(__version__)
         return
+    if any(cmd in args for cmd in ("setup", "init", "install-skill", "--setup")):
+        from ogm_mcp_skills.setup import setup_harnesses
+
+        result = setup_harnesses()
+        print("🚀 ogm-mcp-skills setup completed successfully!")
+        if result["installed_skills"]:
+            print("  Installed SKILL.md to:")
+            for path in result["installed_skills"]:
+                print(f"   - {path}")
+        if result["installed_configs"]:
+            print("  Merged MCP configuration into:")
+            for path in result["installed_configs"]:
+                print(f"   - {path}")
+        return
+
     create_server().run(transport="stdio")
